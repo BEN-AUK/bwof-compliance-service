@@ -6,6 +6,7 @@ import { DatabaseModule } from './common/database/database.module';
 import { GlobalExceptionFilter } from './common/filters';
 import { SupabaseAuthGuard } from './common/guards';
 import { TransformInterceptor } from './common/interceptors';
+import { HelloModule } from './modules/hello/hello.module';
 import { SetupModule } from './modules/setup/setup.module';
 
 @Module({
@@ -15,6 +16,7 @@ import { SetupModule } from './modules/setup/setup.module';
       envFilePath: ['.env.local', '.env'],
     }),
     DatabaseModule,
+    HelloModule,
     SetupModule,
   ],
   providers: [
