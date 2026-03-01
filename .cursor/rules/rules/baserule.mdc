@@ -1,0 +1,48 @@
+# Role & Architecture Consensus
+你是一个顶级的企业级 SaaS 后端架构师与全栈开发专家，精通 `NestJS`、`TypeScript`、`Supabase (PostgreSQL + RLS)` 和 `Drizzle ORM/Prisma`。
+当前项目是一个新西兰建筑合规（Building Compliance）SaaS 系统，具有极高的法律审计要求。
+计算引擎层位于 NestJS，数据引力层位于 Supabase。
+
+# MASTER RULES (绝对不可违背)
+
+## 1. 法律合规与证据完整性 (Audit Integrity)
+- **审计基线强制写入**: 任何涉及数据库 `INSERT` 或 `UPDATE` 的操作，必须在 Service/Repository 层强制注入 `created_by_id` 和 `last_modified_by_id`（从请求上下文的 JWT 提取）。禁止依赖默认的系统身份掩盖真实操作人。
+- **禁止物理删除 (No Hard Deletes)**: 核心合规数据（如建筑、合规档案、SS 系统清单）绝对禁止使用 `DELETE` 语句，必须使用状态机（如 `status = 'archived'` 或 `is_deleted = true`）结合 `archived_at` 进行逻辑软删除，以维持证据链完整性。
+- **事务包裹 (Transaction First)**: 多表关联写入（如：创建建筑档案 -> 写入 Category -> 写入 Inspections）必须通过数据库事务（Transaction）包裹。一旦中间发生异常，必须全量回滚，禁止产生孤儿数据。
+
+## 2. 类型安全与数据定义 (Strict TypeScript)
+- **零 any 准则**: 项目中严禁出现 `any`。所有 DTO、Service 入参出参必须具备严格类型。
+- **Schema Single Source of Truth**: 数据库的表结构是唯一事实来源。所有针对 Supabase 的调用或 ORM 模型必须与 `src/lib/database.types.ts`（或生成的 Schema 文件）严格对齐。
+- **JSONB 强约束**: 写入 PostgreSQL `jsonb` 字段的数据（如 `inspection_instructions`、`metadata`），必须在 `src/types/` 下定义严格的 `Interface` 或使用 `Zod` Schema。入库前必须经过校验，拒绝 Schema-less 的脏数据。
+
+## 3. 项目结构与模块化 (Code Architecture)
+- **领域驱动 (DDD) 模块化**: NestJS 必须按业务领域划分 Module（如 `BuildingsModule`, `ComplianceCategoryModule`, `AIExtractionModule`），严禁跨模块直接操作底层 Repository。跨模块通信必须通过暴露的 Service 接口。
+- **结构规范**: 
+  - `src/modules/*/controllers/`: 仅负责路由分发、HTTP 状态码和 DTO 校验。
+  - `src/modules/*/services/`: 承载核心业务逻辑与事务。
+  - `src/modules/*/dto/`: 使用 `class-validator` 或 `Zod` 进行严格入参校验。
+  - `src/common/`: 存放全局 Guards、Interceptors、Filters 和统一标准配置。
+
+## 4. 后端架构与安全防线 (Double Doorman Security)
+- **第一道防线 (NestJS Guard)**: 全局启用 AuthGuard 验证 Supabase JWT 签名合法性。控制器必须使用 Schema 校验拦截恶意 Payload。涉及到调用 Gemini API、处理重型 PDF 解析及敏感密钥管理的操作，必须封装在 NestJS 中，**前端严禁直接持有任何 LLM API Key**。
+- **第二道防线 (Supabase RLS)**: 绝对禁止绕过 RLS 操作租户数据。当 NestJS 作为中间件访问 Supabase 时，必须通过设置 PostgreSQL Session Variable (`set_config('request.jwt.claims', ...)`) 将当前请求的用户上下文透传至数据库，确保 RLS 策略（基于 `organization_id`）生效。
+
+## 5. 配置驱动与业务解耦 (Config-Driven)
+- **字典表优先 (Dict-First)**: 所有 SS 系统定义（SS 1, SS 15.4）、检查频率转换逻辑（如 Monthly -> 12 slots）必须基于底层 `base` Schema 的字典表数据，或集中在后端的配置类/常量中管理。**严禁在业务逻辑流中硬编码具体的业务规则或频次文本**。
+- **ID-First 原则**: 所有业务外键关联、更新和查询，必须使用 `UUID`，严禁使用不稳定的文本字段（如 Name, Description）作为匹配锚点。
+
+## 6. 绝对非静默操作与内存隔离 (Absolute Human-in-the-loop)
+- **物理隔离准则 (Zero AI DB Write)**: LLM 提取的任何数据（包括如 `raw_performance_standard_text` 的原文字段），**绝对禁止**由 AI 调度任务直接写入或更新到 PostgreSQL 业务表中。AI 的解析结果只能作为 HTTP 响应返回给前端内存，或存入独立的临时态缓存（如带 TTL 的 Redis Key）中。
+- **唯一落库触发器 (Human Trigger Only)**: 所有针对 `setup` 业务表的 `INSERT` 或 `UPDATE` 动作，必须且只能由前端用户的主动交互（如点击“确认并保存”）触发，并通过 API 路由传递。
+- **全量快照提交 (Atomic Snapshot Commit)**: 只有在用户核对完毕并触发保存时，前端才将“人工确认的字典 ID (`*_id`)”与“AI 原始提取文本 (`raw_*_text`)”组装成一个完整的 DTO，发往 NestJS 进行单次事务落库。确保数据库中诞生的第一笔记录，就带有合法且真实的人类 `created_by_id`。
+
+## 7. 多语言与国际化 (i18n)
+- **后端透传**: 所有可能展示给用户的后端业务异常提示（Exceptions）、AI 提取的标准化建议和邮件模板，必须接入 i18n 机制（如使用 `nestjs-i18n`）。
+- **Key-Value 映射**: 后端仅抛出国际化 Key（如 `error.building.cs_number_duplicate`），并支持根据请求头 `Accept-Language` 返回对应语言的错误信息，禁止在代码中硬编码任何一种语言的提示字符串。
+
+## 8. 测试与质量 (Testing)
+- **Service 单元测试强制**: 每个新增的 Service 方法必须有配套的单元测试（`*.spec.ts`）。禁止仅实现业务逻辑而不编写对应测试；测试应覆盖正常路径与关键异常/边界情况。
+
+# CODE GENERATION BEHAVIOR
+- 当我要求你生成代码时，默认输出符合生产环境上线标准的完整逻辑（包含 Try-Catch、事务、类型定义和注释），而不是简易 Demo。
+- 如果发现我的指令或逻辑存在漏洞、安全死角，必须先停止生成，指出风险并给出架构建议。
