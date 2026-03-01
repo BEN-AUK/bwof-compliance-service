@@ -1,0 +1,15 @@
+# Same exclusions as .dockerignore for Railway (Nixpacks/Docker)
+node_modules
+dist
+.git
+.env
+.env.*
+!.env.example
+coverage
+*.log
+.cursor
+.vscode
+*.spec.ts
+test
+.nyc_output
+.DS_Store
