@@ -113,28 +113,37 @@ export class FileUploadAiService {
       await this.ai.getPromptAndUserInstructionById(promptId);
     const { buffer, mimeType } = this.file.normalizeFileInput(file);
 
-    const raw = await this.ai.generateContent({
-      systemPrompt,
-      userInstruction,
-      extraParts: [
-        {
-          inlineData: {
-            mimeType: mimeType || 'application/octet-stream',
-            data: buffer.toString('base64'),
+    let raw: string;
+    try {
+      raw = await this.ai.generateContent({
+        systemPrompt,
+        userInstruction,
+        extraParts: [
+          {
+            inlineData: {
+              mimeType: mimeType || 'application/octet-stream',
+              data: buffer.toString('base64'),
+            },
           },
-        },
-      ],
-      model: this.geminiModel,
-      timeoutMs: this.aiRequestTimeoutMs,
-      responseMimeType: 'application/json',
-    });
+        ],
+        model: this.geminiModel,
+        timeoutMs: this.aiRequestTimeoutMs,
+        responseMimeType: 'application/json',
+      });
+    } catch (err) {
+      this.logger.error(
+        `AI generateContent failed: ${String(err)}`,
+        (err as Error)?.stack,
+      );
+      throw err;
+    }
 
-    this.logger.log(`raw resposne: ${raw}`);
+    this.logger.log(`raw response: ${raw}`);
 
-    // return parseJsonWithSchema<IFileAnalyzeResult>(
-    //   raw,
-    //   FileAnalyzeResultSchema as z.ZodType<IFileAnalyzeResult>,
-    //   'file_upload_ai.invalid_ai_json',
-    // );
+    return parseJsonWithSchema<IFileAnalyzeResult>(
+      raw,
+      FileAnalyzeResultSchema as z.ZodType<IFileAnalyzeResult>,
+      'file_upload_ai.invalid_ai_json',
+    );
   }
 }
