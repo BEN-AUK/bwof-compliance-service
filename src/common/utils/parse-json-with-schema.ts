@@ -1,10 +1,10 @@
-import { BadGatewayException } from '@nestjs/common';
+import { InvalidJsonOrSchemaError } from '../errors';
 import type { z } from 'zod';
 
 /**
  * Parse a JSON string and validate with a Zod schema.
- * Throws BadGatewayException with the given errorCode on parse or validation failure.
- * Reusable for AI responses, webhooks, or any JSON payload that must match a schema.
+ * Throws InvalidJsonOrSchemaError (HTTP-agnostic) on parse or validation failure.
+ * The presentation layer (e.g. GlobalExceptionFilter) maps it to 422 Unprocessable Entity.
  */
 export function parseJsonWithSchema<T>(
   raw: string,
@@ -15,11 +15,11 @@ export function parseJsonWithSchema<T>(
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new BadGatewayException(errorCode);
+    throw new InvalidJsonOrSchemaError(errorCode);
   }
   const result = schema.safeParse(parsed);
   if (!result.success) {
-    throw new BadGatewayException(errorCode);
+    throw new InvalidJsonOrSchemaError(errorCode);
   }
   return result.data;
 }

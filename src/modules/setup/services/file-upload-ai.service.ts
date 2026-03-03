@@ -36,7 +36,6 @@ const FileAnalyzeResultSchema = z.object({
 /** Returned when upload and analyze succeeds: storage path + analysis */
 export interface IUploadAndAnalyzeResult {
   storagePath: string;
-  signedUrlExpiresAt: number;
   analysis: IFileAnalyzeResult;
 }
 
@@ -79,78 +78,41 @@ export class FileUploadAiService {
   }
 
   /**
-   * Main entry: accepts Buffer or Multer-style file, uploads to private bucket,
-   * generates Signed URL, runs Gemini parse (prompt by promptId from YAML), returns analysis.
-   * Deletes uploaded file on failure.
+   * Upload file to private bucket. Returns the storage path.
    */
-  async uploadAndAnalyze(
+  async upload(
     file: FileUploadInput,
-    options?: {
-      /** Storage path prefix, e.g. "temp/{userId}", unique filename appended */
-      pathPrefix?: string;
-      /** Prompt ID, key in config/prompts.yaml, e.g. "documentAnalyzer" */
-      promptId?: string;
-    },
-  ): Promise<IUploadAndAnalyzeResult> {
-    const pathPrefix = options?.pathPrefix ?? 'temp';
-    const promptId = options?.promptId ?? 'documentAnalyzer';
-    const { prompt: systemPrompt, userInstruction } =
-      await this.ai.getPromptAndUserInstructionById(promptId);
-    const { buffer, mimeType, originalName } = this.file.normalizeFileInput(file);
-    const storagePath = this.bucket.buildUniquePath(pathPrefix, originalName);
-
-    let uploadSucceeded = false;
+    options?: { pathPrefix?: string },
+  ): Promise<{ storagePath: string }> {
     try {
-      // 1) Upload to private bucket
+      const pathPrefix = options?.pathPrefix ?? 'temp';
+      const { buffer, mimeType, originalName } = this.file.normalizeFileInput(file);
+      const storagePath = this.bucket.buildUniquePath(pathPrefix, originalName);
       await this.bucket.upload(storagePath, buffer, { contentType: mimeType });
-      uploadSucceeded = true;
       this.logger.log(`Uploaded: ${storagePath}`);
-
-      // 2) Generate short-lived Signed URL (bucket must be private)
-      await this.bucket.createSignedUrl(storagePath, this.signedUrlExpirySeconds);
-      const expiresAt = Date.now() + this.signedUrlExpirySeconds * 1000;
-
-      // 3) Call Gemini parse (with timeout), force JSON output; pass buffer to avoid AI fetching URL
-      const analysis = await this.analyzeWithGemini(
-        buffer,
-        mimeType,
-        systemPrompt,
-        userInstruction,
-      );
-
-      return {
-        storagePath,
-        signedUrlExpiresAt: expiresAt,
-        analysis,
-      };
+      return { storagePath };
     } catch (err) {
       this.logger.error(
-        `uploadAndAnalyze failed: ${String(err)}`,
+        `upload failed: ${String(err)}`,
         (err as Error)?.stack,
       );
-      if (uploadSucceeded) {
-        try {
-          await this.bucket.remove(storagePath);
-          this.logger.log(`Cleaned up orphan file: ${storagePath}`);
-        } catch (e) {
-          this.logger.warn(
-            `Failed to cleanup storage path ${storagePath}: ${String(e)}`,
-          );
-        }
-      }
       throw err;
     }
   }
 
   /**
-   * Call Gemini Vision with inlineData (base64), force JSON output, with timeout and parse.
+   * Run AI analysis on file (Gemini Vision, prompt by promptId from YAML).
+   * Does not upload; use together with upload() if you need storage.
    */
-  private async analyzeWithGemini(
-    buffer: Buffer,
-    mimeType: string,
-    systemPrompt: string,
-    userInstruction: string,
+  async analyze(
+    file: FileUploadInput,
+    options?: { promptId?: string },
   ): Promise<IFileAnalyzeResult> {
+    const promptId = options?.promptId ?? 'documentAnalyzer';
+    const { prompt: systemPrompt, userInstruction } =
+      await this.ai.getPromptAndUserInstructionById(promptId);
+    const { buffer, mimeType } = this.file.normalizeFileInput(file);
+
     const raw = await this.ai.generateContent({
       systemPrompt,
       userInstruction,
@@ -167,11 +129,12 @@ export class FileUploadAiService {
       responseMimeType: 'application/json',
     });
 
-    return parseJsonWithSchema<IFileAnalyzeResult>(
-      raw,
-      FileAnalyzeResultSchema as z.ZodType<IFileAnalyzeResult>,
-      'file_upload_ai.invalid_ai_json',
-    );
-  }
+    this.logger.log(`raw resposne: ${raw}`);
 
+    // return parseJsonWithSchema<IFileAnalyzeResult>(
+    //   raw,
+    //   FileAnalyzeResultSchema as z.ZodType<IFileAnalyzeResult>,
+    //   'file_upload_ai.invalid_ai_json',
+    // );
+  }
 }

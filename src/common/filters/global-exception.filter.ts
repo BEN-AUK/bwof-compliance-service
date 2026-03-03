@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { type Response } from 'express';
+import { InvalidJsonOrSchemaError } from '../errors';
 import type { ApiResponse } from '../interceptors/transform.interceptor';
 
 /**
@@ -53,6 +54,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const msg =
         typeof ex.message === 'string' ? ex.message : 'error.unknown';
       return { status, code: status, message: msg };
+    }
+
+    if (exception instanceof InvalidJsonOrSchemaError) {
+      return {
+        status: HttpStatus.UNPROCESSABLE_ENTITY,
+        code: HttpStatus.UNPROCESSABLE_ENTITY,
+        message: exception.code,
+      };
     }
 
     if (exception instanceof Error) {
