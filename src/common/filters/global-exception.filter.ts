@@ -57,13 +57,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     if (exception instanceof Error) {
       return {
-        status: HttpStatus.INTERNAL_SERVER_ERROR,
-        message: 'error.internal',
+        status: HttpStatus.BAD_GATEWAY,
+        message: 'error.bad_gateway',
       };
     }
 
     return {
-      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      status: HttpStatus.BAD_GATEWAY,
       message: 'error.unknown',
     };
   }

@@ -43,6 +43,9 @@
 ## 8. 测试与质量 (Testing)
 - **Service 单元测试强制**: 每个新增的 Service 方法必须有配套的单元测试（`*.spec.ts`）。禁止仅实现业务逻辑而不编写对应测试；测试应覆盖正常路径与关键异常/边界情况。
 
+## 9. Code Language (English Only)
+- **No Chinese in Code**: All source code must be written in English. This includes comments, JSDoc, inline documentation, logger messages, error messages in code, and any user-facing strings that live in the codebase. Configuration files (e.g. prompts) and documentation (e.g. README) may use Chinese if needed; `.ts`, `.js` and other code files must not.
+
 # CODE GENERATION BEHAVIOR
 - 当我要求你生成代码时，默认输出符合生产环境上线标准的完整逻辑（包含 Try-Catch、事务、类型定义和注释），而不是简易 Demo。
 - 如果发现我的指令或逻辑存在漏洞、安全死角，必须先停止生成，指出风险并给出架构建议。

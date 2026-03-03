@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SetupController } from './controllers/setup.controller';
-import { CsDocumentService } from './services/cs-document.service';
+import { FileUploadAiService } from './services/file-upload-ai.service';
 import { SetupService } from './services/setup.service';
 
 /**
@@ -9,7 +9,7 @@ import { SetupService } from './services/setup.service';
  */
 @Module({
   controllers: [SetupController],
-  providers: [SetupService, CsDocumentService],
-  exports: [SetupService, CsDocumentService],
+  providers: [SetupService, FileUploadAiService],
+  exports: [SetupService, FileUploadAiService],
 })
 export class SetupModule {}
