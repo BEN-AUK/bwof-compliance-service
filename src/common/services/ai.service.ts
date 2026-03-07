@@ -26,6 +26,8 @@ export interface GenerateContentOptions {
   model?: string;
   timeoutMs?: number;
   responseMimeType?: 'application/json' | null;
+  /** JSON Schema for structured output; requires responseMimeType: 'application/json'. */
+  responseJsonSchema?: object;
 }
 
 /**
@@ -49,7 +51,7 @@ export class AiService {
     this.defaultModel =
       this.config.get<string>('GEMINI_MODEL') ?? 'gemini-2.0-flash';
     this.defaultTimeoutMs =
-      Number(this.config.get<string>('AI_REQUEST_TIMEOUT_MS')) || 30_000;
+      Number(this.config.get<string>('AI_REQUEST_TIMEOUT_MS')) || 300_000;
 
     if (!this.geminiApiKey) {
       this.logger.warn(
@@ -128,6 +130,7 @@ export class AiService {
       model = this.defaultModel,
       timeoutMs = this.defaultTimeoutMs,
       responseMimeType = null,
+      responseJsonSchema,
     } = options;
 
     const ai = this.getGemini();
@@ -143,6 +146,7 @@ export class AiService {
         contents: [{ role: 'user', parts }],
         config: {
           responseMimeType: responseMimeType ?? undefined,
+          responseJsonSchema: responseJsonSchema ?? undefined,
           abortSignal: controller.signal,
         },
       });

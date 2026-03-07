@@ -4,40 +4,57 @@ import { AiService } from '../../../common/services/ai.service';
 import { BucketService } from '../../../common/services/bucket.service';
 import { FileService, type FileUploadInput } from '../../../common/services/file.service';
 import { parseJsonWithSchema } from '../../../common/utils/parse-json-with-schema';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 
 // =============================================================================
-// Interface definitions (Interface-First) — AI response JSON schema, no any
+// AI response JSON: single source of truth — Zod schema, type inferred
 // =============================================================================
 
-/**
- * Strict type for AI document/image analysis result.
- * Matches response_format / responseMimeType: application/json output.
- */
-export interface IFileAnalyzeResult {
-  /** Document/image type, e.g. "bwof_certificate" | "inspection_report" | "unknown" */
-  documentType: string;
-  /** Brief summary (1-3 sentences) */
-  summary: string;
-  /** Confidence score, range [0, 1] */
-  confidenceScore: number;
-  /** Optional extracted key-value pairs */
-  extractedFields?: Record<string, string>;
-}
-
-/** Zod schema for AI document/image analysis JSON; used with parseJsonWithSchema. */
-const FileAnalyzeResultSchema = z.object({
-  documentType: z.string().default('unknown'),
-  summary: z.string().default(''),
-  confidenceScore: z.number().min(0).max(1).default(0),
-  extractedFields: z.record(z.string()).optional(),
+/** 检查计划：用于生成证据链空格 (Compliance Slots) */
+const InspectionRequirementSchema = z.object({
+  frequency: z.enum([
+    'Daily',
+    'Weekly',
+    'Monthly',
+    '3 Monthly',
+    '6 Monthly',
+    'Annually',
+  ]),
+  inspector_role: z.enum(['Owner', 'IQP', 'Agent']),
 });
 
+/** 特定系统清单：核心校验数组 */
+const SpecifiedSystemSchema = z.object({
+  ss_code: z.string(),
+  system_name: z.string(),
+  compliance_baseline: z.object({
+    performance_standards: z.array(z.string()),
+    extent: z.string(),
+  }),
+  inspection_schedules: z.array(InspectionRequirementSchema),
+});
+
+/** Zod schema for AI document/image analysis JSON; used with parseJsonWithSchema. */
+const BuildingComplianceSchema = z.object({
+  building_metadata: z.object({
+    building_name: z.string(),
+    address: z.string(),
+    cs_number: z.string(),
+    issue_date: z.string(),
+    council_name: z.string(),
+  }),
+  specified_systems: z.array(SpecifiedSystemSchema),
+});
+
+/** Inferred type (single source of truth). */
+export type BuildingCompliance = z.infer<typeof BuildingComplianceSchema>;
+
 /** Returned when upload and analyze succeeds: storage path + analysis */
-export interface IUploadAndAnalyzeResult {
+export type IUploadAndAnalyzeResult = {
   storagePath: string;
-  analysis: IFileAnalyzeResult;
-}
+  analysis: BuildingCompliance;
+};
 
 /** Re-export for callers that use this module as entry point for upload types */
 export type { FileUploadInput } from '../../../common/services/file.service';
@@ -74,7 +91,7 @@ export class FileUploadAiService {
     this.signedUrlExpirySeconds =
       Number(this.config.get<string>('SIGNED_URL_EXPIRY_SECONDS')) || 300;
     this.geminiModel =
-      this.config.get<string>('GEMINI_MODEL') ?? 'gemini-2.0-flash';
+      this.config.get<string>('GEMINI_MODEL') ?? 'gemini-2.5-flash';
   }
 
   /**
@@ -107,7 +124,7 @@ export class FileUploadAiService {
   async analyze(
     file: FileUploadInput,
     options?: { promptId?: string },
-  ): Promise<IFileAnalyzeResult> {
+  ): Promise<BuildingCompliance> {
     const promptId = options?.promptId ?? 'documentAnalyzer';
     const { prompt: systemPrompt, userInstruction } =
       await this.ai.getPromptAndUserInstructionById(promptId);
@@ -129,6 +146,10 @@ export class FileUploadAiService {
         model: this.geminiModel,
         timeoutMs: this.aiRequestTimeoutMs,
         responseMimeType: 'application/json',
+        responseJsonSchema: zodToJsonSchema(BuildingComplianceSchema, {
+          target: 'openApi3',
+          $refStrategy: 'none',
+        }) as object,
       });
     } catch (err) {
       this.logger.error(
@@ -140,9 +161,9 @@ export class FileUploadAiService {
 
     this.logger.log(`raw response: ${raw}`);
 
-    return parseJsonWithSchema<IFileAnalyzeResult>(
+    return parseJsonWithSchema<BuildingCompliance>(
       raw,
-      FileAnalyzeResultSchema as z.ZodType<IFileAnalyzeResult>,
+      BuildingComplianceSchema as z.ZodType<BuildingCompliance>,
       'file_upload_ai.invalid_ai_json',
     );
   }

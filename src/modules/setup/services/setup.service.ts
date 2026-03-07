@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { type FileUploadInput } from '../../../common/services/file.service';
 import {
   FileUploadAiService,
-  type IFileAnalyzeResult,
+  type BuildingCompliance,
 } from './file-upload-ai.service';
 
 /**
@@ -27,7 +27,7 @@ export class SetupService {
   analyzeFile(
     file: FileUploadInput,
     options?: { promptId?: string },
-  ): Promise<IFileAnalyzeResult> {
+  ): Promise<BuildingCompliance> {
     return this.fileUploadAi.analyze(file, options);
   }
 }
