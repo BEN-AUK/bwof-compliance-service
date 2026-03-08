@@ -17,7 +17,7 @@ import { AppModule } from '../src/app.module';
 import { CsDocumentAnalyzeService } from '../src/modules/setup/services/cs-document-analyze.service';
 
 const DEFAULT_FILE =
-  'resource/building compliance/wrong_file.pdf';
+  'resource/building compliance/difficault-1-exemplar-compliance-schedule.pdf';
 
 const EXT_TO_MIME: Record<string, string> = {
   pdf: 'application/pdf',

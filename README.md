@@ -1,1 +1,2 @@
 npm run script:analyze "resource/building compliance/BWOF-302-Great-South-Road.pdf"
+npm run script:upload

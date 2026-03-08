@@ -8,6 +8,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
+import fetch from 'cross-fetch';
 
 const DEFAULT_PROMPTS_CONFIG = 'config/prompts';
 
@@ -92,8 +93,7 @@ export class InfraService {
         {
           auth: { persistSession: false },
           global: {
-            // 显式开启 keepAlive，防止 NANO 实例在处理大数据块时过早断开 Socket
-            fetch: (url, options) => fetch(url, { ...options, keepalive: true }),
+            fetch: fetch
           },
         },
       );

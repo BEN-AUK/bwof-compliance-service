@@ -33,6 +33,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@supabase/supabase-js": "^2.47.0",
+    "cross-fetch": "^4.1.0",
     "drizzle-orm": "^0.45.1",
     "helmet": "^8.0.0",
     "nestjs-i18n": "^10.5.0",

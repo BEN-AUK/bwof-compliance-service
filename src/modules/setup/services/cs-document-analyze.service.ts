@@ -70,7 +70,11 @@ export class CsDocumentAnalyzeService {
       const pathPrefix = options?.pathPrefix ?? 'temp';
       const { buffer, mimeType, originalName } = this.file.normalizeFileInput(file);
       const storagePath = this.bucket.buildUniquePath(pathPrefix, originalName);
-      await this.bucket.upload(storagePath, buffer, { contentType: mimeType });
+      const bucket = this.config.get<string>('STORAGE_BUCKET') ?? 'documents';
+      await this.bucket.upload(storagePath, buffer, {
+        contentType: mimeType,
+        bucket,
+      });
       this.logger.log(`Uploaded: ${storagePath}`);
       return { storagePath };
     } catch (err) {
