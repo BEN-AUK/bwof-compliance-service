@@ -36,15 +36,28 @@ export class BucketService {
   ): Promise<void> {
     const supabase = this.infra.getSupabaseAdmin();
     const bucketName = this.resolveBucket(options?.bucket);
+  
+    // 【核心修复 1】将 Node.js Buffer 转换为标准的 Uint8Array
+    // Node 原生 fetch (undici) 处理 Buffer 时在某些版本下存在计算 Content-Length 的 Bug
+    const uint8Array = new Uint8Array(buffer);
+  
     const { error } = await supabase.storage
       .from(bucketName)
-      .upload(path, buffer, {
+      .upload(path, uint8Array, {
         contentType: options?.contentType ?? 'application/octet-stream',
         upsert: options?.upsert ?? false,
+        // 【核心修复 2】针对 Node 18+ 环境，某些版本的 fetch 需要显式指定 duplex 模式
+        // @ts-ignore
+        duplex: 'half',
       });
+  
     if (error) {
+      // 【核心修复 3】改进错误捕获，提取更深层的网络错误原因
+      const errorMessage = error.message || 'Unknown Storage Error';
+      const cause = (error as any).originalError?.cause || (error as any).cause || '';
+      
       throw new InternalServerErrorException(
-        `bucket.upload_failed: ${error.message}`,
+        `bucket.upload_failed: ${errorMessage} ${cause}`.trim(),
       );
     }
   }

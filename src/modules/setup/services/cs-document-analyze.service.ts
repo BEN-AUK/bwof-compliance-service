@@ -11,6 +11,7 @@ import { FileService, type FileUploadInput } from '../../../common/services/file
 import {
   DocumentUtil,
   parseJsonWithSchema,
+  type DocumentInput,
 } from '../../../common/utils';
 import {
   BuildingComplianceSchema,
@@ -43,8 +44,8 @@ export class CsDocumentAnalyzeService {
   private readonly aiRequestTimeoutMs: number;
   /** Signed URL expiry (seconds), from env SIGNED_URL_EXPIRY_SECONDS (default 300) */
   private readonly signedUrlExpirySeconds: number;
-  /** Gemini model ID, from env GEMINI_MODEL (default gemini-2.0-flash) */
-  private readonly geminiModel: string;
+
+  private readonly pdfMimeType: string = 'application/pdf';
 
   constructor(
     private readonly ai: AiService,
@@ -56,8 +57,6 @@ export class CsDocumentAnalyzeService {
       Number(this.config.get<string>('AI_REQUEST_TIMEOUT_MS')) || 30_000;
     this.signedUrlExpirySeconds =
       Number(this.config.get<string>('SIGNED_URL_EXPIRY_SECONDS')) || 300;
-    this.geminiModel =
-      this.config.get<string>('GEMINI_MODEL') ?? 'gemini-2.5-flash';
   }
 
   /**
@@ -89,115 +88,72 @@ export class CsDocumentAnalyzeService {
    * Does not upload; use together with upload() if you need storage.
    */
   async analyze(file: FileUploadInput): Promise<BuildingCompliance> {
-    const { buffer, mimeType } = this.file.normalizeFileInput(file);
+    let { buffer, mimeType } = this.file.normalizeFileInput(file);
     const fileSizeBytes = buffer.length;
     const fileSizeKb = (fileSizeBytes / 1024).toFixed(2);
     this.logger.log(
       `Analyze started, file size: ${fileSizeBytes} bytes (${fileSizeKb} KB)`,
     );
 
-    const isPdf = mimeType === 'application/pdf';
-
-    if (!isPdf) {
+    if (mimeType !== this.pdfMimeType) {
       throw new BadRequestException('file_upload_ai.only_pdf_supported');
     }
-    let { extractedText, encodedContent } = await this.getFileContent(buffer, mimeType);
-    const index = await this.runIndexer(extractedText, encodedContent);
 
-    const pageIndicesFromRanges =
+    const { useTextPath, extractedText } =
+      await DocumentUtil.extractTextAndDecidePath(buffer);
+    this.logger.log(
+      useTextPath ? 'text path (no vision)' : 'vision path (scanned/low text)',
+    );
+    const index: DocumentIndex = await this.runIndexer(
+      useTextPath ? { type: 'text', content: extractedText } : { type: 'buffer', content: buffer },
+    );
+
+    if (!index.isComplianceSchedule) {
+      const message =
+        (typeof index.rejection_reason === 'string' && index.rejection_reason.trim())
+          ? index.rejection_reason.trim()
+          : 'file_upload_ai.not_a_compliance_schedule';
+      throw new BadRequestException(message);
+    }
+
+    const pageIndicesSet =
       DocumentUtil.collectPageIndicesFromRanges(index);
-    if (pageIndicesFromRanges.size === 0) {
+    if (pageIndicesSet.size === 0) {
       throw new BadRequestException('file_upload_ai.indexer_empty_pages');
     }
 
-    if (!encodedContent) {
-      const { buffer: slicedBuffer, pageCount } = await this.slicePdf(
-        buffer,
-        index,
-      );
-      this.logger.log(`Slicer stage completed: ${pageCount} pages`);
-      encodedContent = [
-        {
-          inlineData: {
-            mimeType: mimeType || 'application/octet-stream',
-            data: slicedBuffer.toString('base64'),
-          },
-        },
-      ];
-    }
+    const { slicedBuffer, pageCount } = await this.slicePdf(
+      buffer,
+      pageIndicesSet,
+    );
+    this.logger.log(`Slicer stage completed: ${pageCount} pages`);
+
 
     const result = await this.runExtractor(
-      extractedText, encodedContent,
+      useTextPath ? { type: 'text', content: extractedText } : { type: 'buffer', content: slicedBuffer },
     );
 
     return result;
   }
 
-  private async getFileContent(
-    buffer: Buffer,
-    mimeType: string,
-  ): Promise<{
-    extractedText: string, encodedContent:
-    | Array<{
-      inlineData: { mimeType: string; data: string };
-    }>
-    | undefined;
-  }
-  > {
-    let extractedText = '';
-    if (mimeType === 'application/pdf') {
-      try {
-        extractedText =
-          await DocumentUtil.extractTextWithPageMarkers(buffer);
-      } catch (err) {
-        this.logger.error(
-          `extractTextWithPageMarkers failed: ${String(err)}`,
-          (err as Error)?.stack,
-        );
-        throw err;
-      }
-    }
-
-    const useTextPath = extractedText.length > 200;
-    this.logger.log(
-      useTextPath
-        ? 'text path (no vision)'
-        : 'vision path (scanned/low text)',
-    );
-
-    const encodedContent = useTextPath
-      ? undefined
-      : [
-        {
-          inlineData: {
-            mimeType: mimeType || 'application/octet-stream',
-            data: buffer.toString('base64'),
-          },
-        },
-      ];
-
-    return { extractedText, encodedContent };
-  }
-
   @LogExecutionTime({ label: 'Indexer' })
-  private async runIndexer(
-    extractedText: string,
-    encodedContent: Array<{ inlineData: { mimeType: string; data: string } }> | undefined,
-  ): Promise<DocumentIndex> {
-    const { prompt: systemPrompt, userInstruction } =
+  private async runIndexer(input: DocumentInput): Promise<DocumentIndex> {
+    const { prompt: systemPrompt, userInstruction, model } =
       await this.ai.getPromptAndUserInstructionById('csBuildingScanner');
 
-    const effectiveUserInstruction = encodedContent
-      ? userInstruction
-      : `${userInstruction}\n\n${extractedText}`;
+    const { finalUserInstruction, extraParts } = DocumentUtil.getAIModelParams(
+      input,
+      userInstruction,
+      { pdfMimeType: this.pdfMimeType },
+    );
 
     let raw: string;
     try {
       raw = await this.ai.generateContent({
         systemPrompt,
-        userInstruction: effectiveUserInstruction,
-        extraParts: encodedContent,
-        model: this.geminiModel,
+        userInstruction: finalUserInstruction,
+        extraParts,
+        model,
         timeoutMs: this.aiRequestTimeoutMs,
         responseMimeType: 'application/json',
         responseJsonSchema: zodToJsonSchema(DocumentIndexSchema, {
@@ -222,10 +178,8 @@ export class CsDocumentAnalyzeService {
 
   private async slicePdf(
     buffer: Buffer,
-    index: DocumentIndex,
-  ): Promise<{ buffer: Buffer; pageCount: number }> {
-
-    const pageIndicesSet = DocumentUtil.collectPageIndicesFromRanges(index);
+    pageIndicesSet: Set<number>,
+  ): Promise<{ slicedBuffer: Buffer; pageCount: number }> {
 
     const sourceDoc = await PDFDocument.load(buffer);
     const totalPages = sourceDoc.getPageCount();
@@ -245,35 +199,34 @@ export class CsDocumentAnalyzeService {
     }
 
     const resultBuffer = Buffer.from(await targetDoc.save());
-    return { buffer: resultBuffer, pageCount: pageIndices.length };
+    return { slicedBuffer: resultBuffer, pageCount: pageIndices.length };
   }
 
 
   @LogExecutionTime({
     label: 'Extractor',
     context: (args) =>
-      `input size: ${(args[0] as Buffer)?.length ?? 0} bytes`,
+      (args[0] as DocumentInput)?.type === 'buffer'
+        ? `input size: ${(args[0] as { type: 'buffer'; content: Buffer }).content.length} bytes`
+        : 'input type: text',
   })
-  private async runExtractor(
-    extractedText: string,
-    encodedContent:
-      | Array<{ inlineData: { mimeType: string; data: string } }>
-      | undefined,
-  ): Promise<BuildingCompliance> {
-    const { prompt: systemPrompt, userInstruction } =
+  private async runExtractor(input: DocumentInput): Promise<BuildingCompliance> {
+    const { prompt: systemPrompt, userInstruction, model } =
       await this.ai.getPromptAndUserInstructionById('csBuildingAnalyzer');
 
-    const effectiveUserInstruction = encodedContent
-      ? userInstruction
-      : `${userInstruction}\n\n${extractedText}`;
+    const { finalUserInstruction, extraParts } = DocumentUtil.getAIModelParams(
+      input,
+      userInstruction,
+      { pdfMimeType: this.pdfMimeType },
+    );
 
     let raw: string;
     try {
       raw = await this.ai.generateContent({
         systemPrompt,
-        userInstruction: effectiveUserInstruction,
-        extraParts: encodedContent,
-        model: this.geminiModel,
+        userInstruction: finalUserInstruction,
+        extraParts,
+        model,
         timeoutMs: this.aiRequestTimeoutMs,
         responseMimeType: 'application/json',
         responseJsonSchema: zodToJsonSchema(BuildingComplianceSchema, {

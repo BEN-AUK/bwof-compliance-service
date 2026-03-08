@@ -46,7 +46,7 @@ export class InfraService {
     if (this.promptsCache) return this.promptsCache;
     const resolvedPath =
       this.promptsConfigPath.startsWith('/') ||
-      /^[A-Za-z]:[\\/]/.test(this.promptsConfigPath)
+        /^[A-Za-z]:[\\/]/.test(this.promptsConfigPath)
         ? this.promptsConfigPath
         : join(process.cwd(), this.promptsConfigPath);
     const info = await stat(resolvedPath).catch(() => null);
@@ -89,7 +89,13 @@ export class InfraService {
       this.supabaseAdmin = createClient(
         this.supabaseUrl,
         this.supabaseServiceKey,
-        { auth: { persistSession: false } },
+        {
+          auth: { persistSession: false },
+          global: {
+            // 显式开启 keepAlive，防止 NANO 实例在处理大数据块时过早断开 Socket
+            fetch: (url, options) => fetch(url, { ...options, keepalive: true }),
+          },
+        },
       );
     }
     return this.supabaseAdmin;

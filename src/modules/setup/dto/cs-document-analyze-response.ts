@@ -18,6 +18,11 @@ export const DocumentIndexSchema = z.object({
   ss_ranges: z
     .array(PageRangeSchema)
     .describe('Array of [start, end] ranges'),
+  isComplianceSchedule: z.boolean().describe('Whether the document is a compliance schedule'),
+  rejection_reason: z
+    .string()
+    .optional()
+    .describe('Reason for rejection when isComplianceSchedule is false; e.g. BWOF Document, INVALID_DOCUMENT_TYPE'),
 });
 
 export type DocumentIndex = z.infer<typeof DocumentIndexSchema>;

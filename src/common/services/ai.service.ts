@@ -75,12 +75,13 @@ export class AiService {
   }
 
   /**
-   * Get prompt and userInstruction by ID from YAML config.
+   * Get prompt, userInstruction, and optional model by ID from YAML config.
    * Entry must be an object with `prompt` and `userInstruction` (non-empty strings).
+   * model: optional, from YAML; if absent, use ENV GEMINI_MODEL or default.
    */
   async getPromptAndUserInstructionById(
     promptId: string,
-  ): Promise<{ prompt: string; userInstruction: string }> {
+  ): Promise<{ prompt: string; userInstruction: string; model?: string }> {
     const parsed = await this.infra.loadPrompts();
     const entry = parsed[promptId];
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
@@ -91,6 +92,10 @@ export class AiService {
     const obj = entry as Record<string, unknown>;
     const prompt = obj.prompt;
     const userInstruction = obj.userInstruction;
+    const model =
+      typeof obj.model === 'string' && obj.model.trim().length > 0
+        ? obj.model.trim()
+        : undefined;
     if (typeof prompt !== 'string' || typeof userInstruction !== 'string') {
       throw new InternalServerErrorException(
         `ai.prompt_entry_invalid: ${promptId} (must have prompt and userInstruction strings)`,
@@ -104,7 +109,11 @@ export class AiService {
     this.logger.debug(
       `Loaded prompt+userInstruction '${promptId}' from prompts config`,
     );
-    return { prompt: trimmedPrompt, userInstruction: trimmedUserInstruction };
+    return {
+      prompt: trimmedPrompt,
+      userInstruction: trimmedUserInstruction,
+      ...(model && { model }),
+    };
   }
 
   /**
