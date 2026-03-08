@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SetupController } from './controllers/setup.controller';
-import { FileUploadAiService } from './services/file-upload-ai.service';
-import { SetupService } from './services/setup.service';
+import { CsDocumentAnalyzeService } from './services/cs-document-analyze.service';
 
 /**
  * SetupModule - 统一处理 buildings, documents, category, inspections 的联合落库事务。
@@ -9,7 +8,7 @@ import { SetupService } from './services/setup.service';
  */
 @Module({
   controllers: [SetupController],
-  providers: [SetupService, FileUploadAiService],
-  exports: [SetupService, FileUploadAiService],
+  providers: [CsDocumentAnalyzeService],
+  exports: [CsDocumentAnalyzeService],
 })
 export class SetupModule {}

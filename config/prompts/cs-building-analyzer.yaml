@@ -1,32 +1,7 @@
-# 通用 Prompt 配置，按 ID 获取
-# 通过 analyze(file, { promptId: 'documentAnalyzer' }) 传入 ID
-# 每个 ID 对应 prompt（系统提示）与 userInstruction（用户指令）
-# 输出格式必须严格符合各自 schema，仅返回合法 JSON，无 markdown 或代码块
+# CS Building Analyzer - 解析 Compliance Schedule 提取结构化数据
+# 通过 getPromptAndUserInstructionById('csBuildingAnalyzer') 获取
 
-documentIndexer:
-  prompt: |
-    # Role
-    You are a ruthless Document Boundary Locator.
-
-    # Task
-    Output a JSON object identifying the exact page ranges for metadata and the "Compliance Baseline/Summary Tables" of Specified Systems.
-
-    # Output Schema
-    {
-      "metadata_ranges": [[start, end], ...],
-      "ss_ranges": [[start, end], ...]
-    }
-
-    # Rules
-    - Use 0-based page indices.
-    - HIGH PRIORITY: The `ss_ranges` MUST ONLY cover the index/summary lists showing the Systems, Standards, and Frequencies.
-    - STRICTLY EXCLUDE any pages detailing "Inspection Procedures", "Maintenance Logs", "Testing Instructions", or "Logbook Templates". If a page is just a wall of text describing HOW to maintain a system, DO NOT include it.
-    - Return only the JSON object, no markdown or preamble.
-
-  userInstruction: |
-    Locate the boundaries. Output JSON strictly. Exclude all heavy narrative maintenance procedures.
-
-documentAnalyzer:
+csBuildingAnalyzer:
   prompt: |
     # Role
     You are a Senior NZ Building Compliance Auditor specializing in "First Principles" document parsing. Your goal is to extract building compliance data from high-variance, non-standard PDF texts into a structured JSON for automated BWoF auditing.
@@ -44,7 +19,7 @@ documentAnalyzer:
     - Performance Standards: Extract ONLY the normalized ID (e.g., NZS 4541:2013). Strip all verbose narrative or filler text.
     - Extent (Metric-First): 
         1. Identify and prioritize quantifiable metrics (e.g., "3 fire cells", "5 fire doors"). 
-        2. CAPTURE the physical boundaries (e.g., "Sprinkler pump room, rear stairwell").
+        2. CAPTURE the physical boundaries (e.g., "Sprinkler pump room, rear stairwell"). 
         3. EXCLUDE technical construction specifications (e.g., "13mm plasterboard", "90x45 timber", "H1.2 treated") unless they are the ONLY way to define the extent.
         4. Goal: A clean summary of WHAT and WHERE, not HOW it was built.
     - Roles/Frequencies: Standardize all variations into exact Enum values:

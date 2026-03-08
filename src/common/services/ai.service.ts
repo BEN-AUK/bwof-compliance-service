@@ -6,11 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GoogleGenAI } from '@google/genai';
-import { parse as parseYaml } from 'yaml';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-
-const DEFAULT_PROMPTS_CONFIG = 'config/prompts.yaml';
+import { InfraService } from './infra.service';
 
 /** Optional extra parts (e.g. inlineData for image) for Gemini user message. */
 export interface GenerateContentPart {
@@ -38,16 +34,15 @@ export interface GenerateContentOptions {
 export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly geminiApiKey: string;
-  private readonly promptsConfigPath: string;
   private readonly defaultModel: string;
   private readonly defaultTimeoutMs: number;
   private gemini: GoogleGenAI | null = null;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    private readonly infra: InfraService,
+  ) {
     this.geminiApiKey = this.config.get<string>('GEMINI_API_KEY') ?? '';
-    this.promptsConfigPath =
-      this.config.get<string>('PROMPTS_CONFIG_FILE') ??
-      join(process.cwd(), DEFAULT_PROMPTS_CONFIG);
     this.defaultModel =
       this.config.get<string>('GEMINI_MODEL') ?? 'gemini-2.0-flash';
     this.defaultTimeoutMs =
@@ -86,13 +81,7 @@ export class AiService {
   async getPromptAndUserInstructionById(
     promptId: string,
   ): Promise<{ prompt: string; userInstruction: string }> {
-    const content = await readFile(this.promptsConfigPath, 'utf-8');
-    const parsed = parseYaml(content) as Record<string, unknown>;
-    if (!parsed || typeof parsed !== 'object') {
-      throw new InternalServerErrorException(
-        `ai.prompts_config_invalid: ${this.promptsConfigPath}`,
-      );
-    }
+    const parsed = await this.infra.loadPrompts();
     const entry = parsed[promptId];
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
       throw new InternalServerErrorException(
@@ -113,7 +102,7 @@ export class AiService {
       throw new InternalServerErrorException(`ai.prompt_empty: ${promptId}`);
     }
     this.logger.debug(
-      `Loaded prompt+userInstruction '${promptId}' from ${this.promptsConfigPath}`,
+      `Loaded prompt+userInstruction '${promptId}' from prompts config`,
     );
     return { prompt: trimmedPrompt, userInstruction: trimmedUserInstruction };
   }

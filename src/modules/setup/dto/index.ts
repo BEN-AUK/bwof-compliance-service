@@ -3,4 +3,10 @@
  * 未来在此定义：建筑/文档/分类/检查等落库请求的 DTO，使用 class-validator 或 Zod 校验。
  */
 
-export {};
+export {
+  BuildingComplianceSchema,
+  DocumentIndexSchema,
+  type BuildingCompliance,
+  type DocumentIndex,
+  type IUploadAndAnalyzeResult,
+} from './cs-document-analyze-response';
