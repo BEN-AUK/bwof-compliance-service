@@ -21,7 +21,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "db:pull": "drizzle-kit introspect",
+    "db:pull": "drizzle-kit introspect --config=drizzle.config.mjs",
     "script:analyze": "ts-node -r tsconfig-paths/register scripts/analyze-file.ts",
     "script:create-user": "ts-node -r tsconfig-paths/register scripts/create-user.ts",
     "script:upload": "ts-node -r tsconfig-paths/register scripts/upload-file.ts",

@@ -11,23 +11,23 @@ import { sql } from "drizzle-orm";
 import { organizationsInBase, profilesInBase } from "./base";
 import { buildingsInSetup } from "./setup";
 
-export const cs = pgSchema("cs");
+export const comman = pgSchema("comman");
 
-export const analysisTaskStatusEnumInCs = cs.enum("analysis_task_status", [
-	"PENDING",
-	"PROCESSING",
-	"COMPLETED",
-	"FAILED",
-]);
+export const analysisTaskStatusEnumInComman = comman.enum(
+	"analysis_task_status",
+	["PENDING", "PROCESSING", "COMPLETED", "FAILED"],
+);
 
-export const analysisTasksInCs = cs.table(
+export const analysisTasksInComman = comman.table(
 	"analysis_tasks",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
 		organizationId: uuid("organization_id").notNull(),
 		profilesId: uuid("profiles_id").notNull(),
 		buildingId: uuid("building_id").notNull(),
-		status: analysisTaskStatusEnumInCs("status").default("PENDING").notNull(),
+		status: analysisTaskStatusEnumInComman("status")
+			.default("PENDING")
+			.notNull(),
 		filePath: text("file_path").notNull(),
 		errorMessage: text("error_message"),
 		createdAt: timestamp("created_at", {

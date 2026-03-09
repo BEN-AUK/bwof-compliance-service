@@ -6,7 +6,7 @@ import {
 	subCategoryInBase,
 	mainCategoryInBase,
 } from "./base";
-import { analysisTasksInCs } from "./cs";
+import { analysisTasksInComman } from "./comman";
 import {
 	buildingsInSetup,
 	buildingComplianceDocumentsInSetup,
@@ -33,7 +33,7 @@ export const buildingComplianceDocumentsInSetupRelations = relations(
 export const buildingsInSetupRelations = relations(
 	buildingsInSetup,
 	({ one, many }) => ({
-		analysisTasksInCs: many(analysisTasksInCs),
+		analysisTasksInComman: many(analysisTasksInComman),
 		buildingComplianceDocumentsInSetups: many(
 			buildingComplianceDocumentsInSetup,
 		),
@@ -51,7 +51,7 @@ export const buildingsInSetupRelations = relations(
 export const organizationsInBaseRelations = relations(
 	organizationsInBase,
 	({ many }) => ({
-		analysisTasksInCs: many(analysisTasksInCs),
+		analysisTasksInComman: many(analysisTasksInComman),
 		buildingComplianceDocumentsInSetups: many(
 			buildingComplianceDocumentsInSetup,
 		),
@@ -64,7 +64,7 @@ export const organizationsInBaseRelations = relations(
 export const profilesInBaseRelations = relations(
 	profilesInBase,
 	({ one, many }) => ({
-		analysisTasksInCs: many(analysisTasksInCs),
+		analysisTasksInComman: many(analysisTasksInComman),
 		organizationsInBase: one(organizationsInBase, {
 			fields: [profilesInBase.organizationId],
 			references: [organizationsInBase.id],
@@ -72,19 +72,19 @@ export const profilesInBaseRelations = relations(
 	}),
 );
 
-export const analysisTasksInCsRelations = relations(
-	analysisTasksInCs,
+export const analysisTasksInCommanRelations = relations(
+	analysisTasksInComman,
 	({ one }) => ({
 		organizationsInBase: one(organizationsInBase, {
-			fields: [analysisTasksInCs.organizationId],
+			fields: [analysisTasksInComman.organizationId],
 			references: [organizationsInBase.id],
 		}),
 		profilesInBase: one(profilesInBase, {
-			fields: [analysisTasksInCs.profilesId],
+			fields: [analysisTasksInComman.profilesId],
 			references: [profilesInBase.id],
 		}),
 		buildingsInSetup: one(buildingsInSetup, {
-			fields: [analysisTasksInCs.buildingId],
+			fields: [analysisTasksInComman.buildingId],
 			references: [buildingsInSetup.id],
 		}),
 	}),
