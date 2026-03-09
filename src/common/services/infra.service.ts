@@ -12,6 +12,16 @@ import fetch from 'cross-fetch';
 
 const DEFAULT_PROMPTS_CONFIG = 'config/prompts';
 
+export type CreateUserInput = {
+  email: string;
+  password: string;
+  organizationName: string;
+  firstName: string;
+  lastName?: string;
+  role?: 'Admin' | 'Owner' | 'Staff';
+  emailConfirm?: boolean;
+};
+
 /**
  * Shared infra service: Supabase admin client, prompt config loading.
  * For AI generation and prompt-by-id lookup, use AiService.
@@ -99,6 +109,40 @@ export class InfraService {
       );
     }
     return this.supabaseAdmin;
+  }
+
+  async createUser(input: CreateUserInput) {
+    const supabase = this.getSupabaseAdmin();
+    const {
+      email,
+      password,
+      organizationName,
+      firstName,
+      lastName,
+      role = 'Owner',
+      emailConfirm = true,
+    } = input;
+
+    const { data, error } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: emailConfirm,
+      user_metadata: {
+        organization_name: organizationName,
+        first_name: firstName,
+        last_name: lastName ?? '',
+        role,
+      },
+    });
+
+    if (error) {
+      this.logger.error(`Failed to create user ${email}: ${error.message}`);
+      throw new InternalServerErrorException(
+        `infra.create_user_failed: ${error.message}`,
+      );
+    }
+
+    return data;
   }
 
 }

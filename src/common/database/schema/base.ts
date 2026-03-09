@@ -18,8 +18,36 @@ import { sql } from "drizzle-orm";
 
 export const base = pgSchema("base");
 
-// --- Base domain: profiles first (organizations references it for created_by) ---
-// Profiles: id is uuid PK, sole anchor for Supabase Auth (no FK to auth.users)
+// --- Base domain: organizations first so profiles can reference them directly ---
+export const organizationsInBase = base.table(
+	"organizations",
+	{
+		id: uuid().defaultRandom().primaryKey().notNull(),
+		name: text().notNull(),
+		createdAt: timestamp("created_at", {
+			withTimezone: true,
+			mode: "string",
+		}).defaultNow().notNull(),
+		updatedAt: timestamp("updated_at", {
+			withTimezone: true,
+			mode: "string",
+		}).defaultNow().notNull(),
+		createdById: uuid("created_by_id").notNull(),
+		lastModifiedById: uuid("last_modified_by_id").notNull(),
+	},
+	(table) => [
+		pgPolicy("Users can only view their own organization", {
+			as: "permissive",
+			for: "select",
+			to: ["public"],
+			using: sql`(id = ( SELECT profiles.organization_id
+   FROM base.profiles
+  WHERE (profiles.id = auth.uid())))`,
+		}),
+	],
+);
+
+// Profiles are keyed by auth.users.id. organization_id is enforced in SQL migrations.
 export const profilesInBase = base.table(
 	"profiles",
 	{
@@ -40,7 +68,11 @@ export const profilesInBase = base.table(
 		lastModifiedById: uuid("last_modified_by_id").notNull(),
 	},
 	(table) => [
-		// Self-FK for created_by_id, last_modified_by_id -> profiles.id: add in migration to avoid circular type
+		foreignKey({
+			columns: [table.organizationId],
+			foreignColumns: [organizationsInBase.id],
+			name: "profiles_organization_id_fkey",
+		}).onDelete("restrict"),
 		pgPolicy("Users can update own profile", {
 			as: "permissive",
 			for: "update",
@@ -57,45 +89,6 @@ export const profilesInBase = base.table(
 			"profiles_role_check",
 			sql`role = ANY (ARRAY['Admin'::text, 'Owner'::text, 'Staff'::text])`,
 		),
-	],
-);
-
-// organization_id FK on profiles -> organizations added in DB migration (circular dependency)
-export const organizationsInBase = base.table(
-	"organizations",
-	{
-		id: uuid().defaultRandom().primaryKey().notNull(),
-		name: text().notNull(),
-		createdAt: timestamp("created_at", {
-			withTimezone: true,
-			mode: "string",
-		}).defaultNow().notNull(),
-		updatedAt: timestamp("updated_at", {
-			withTimezone: true,
-			mode: "string",
-		}).defaultNow().notNull(),
-		createdById: uuid("created_by_id").notNull(),
-		lastModifiedById: uuid("last_modified_by_id").notNull(),
-	},
-	(table) => [
-		foreignKey({
-			columns: [table.createdById],
-			foreignColumns: [profilesInBase.id],
-			name: "organizations_created_by_id_fkey",
-		}).onDelete("restrict"),
-		foreignKey({
-			columns: [table.lastModifiedById],
-			foreignColumns: [profilesInBase.id],
-			name: "organizations_last_modified_by_id_fkey",
-		}).onDelete("restrict"),
-		pgPolicy("Users can only view their own organization", {
-			as: "permissive",
-			for: "select",
-			to: ["public"],
-			using: sql`(id = ( SELECT profiles.organization_id
-   FROM base.profiles
-  WHERE (profiles.id = auth.uid())))`,
-		}),
 	],
 );
 
