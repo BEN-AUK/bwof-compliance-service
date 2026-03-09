@@ -19,7 +19,7 @@ import { sql } from "drizzle-orm";
 export const base = pgSchema("base");
 
 // --- Base domain: organizations first so profiles can reference them directly ---
-export const organizationsInBase = base.table(
+export const organizations = base.table(
 	"organizations",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
@@ -48,7 +48,7 @@ export const organizationsInBase = base.table(
 );
 
 // Profiles are keyed by auth.users.id. organization_id is enforced in SQL migrations.
-export const profilesInBase = base.table(
+export const profiles = base.table(
 	"profiles",
 	{
 		id: uuid().primaryKey().notNull(),
@@ -70,7 +70,7 @@ export const profilesInBase = base.table(
 	(table) => [
 		foreignKey({
 			columns: [table.organizationId],
-			foreignColumns: [organizationsInBase.id],
+			foreignColumns: [organizations.id],
 			name: "profiles_organization_id_fkey",
 		}).onDelete("restrict"),
 		pgPolicy("Users can update own profile", {
@@ -93,7 +93,7 @@ export const profilesInBase = base.table(
 );
 
 // --- Dictionary / reference tables in base ---
-export const mainCategoryInBase = base.table(
+export const mainCategory = base.table(
 	"main_category",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
@@ -117,7 +117,7 @@ export const mainCategoryInBase = base.table(
 	],
 );
 
-export const complianceStandardInBase = base.table(
+export const complianceStandard = base.table(
 	"compliance_standard",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
@@ -152,7 +152,7 @@ export const complianceStandardInBase = base.table(
 	],
 );
 
-export const frequencyDictInBase = base.table(
+export const frequencyDict = base.table(
 	"frequency_dict",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
@@ -177,7 +177,7 @@ export const frequencyDictInBase = base.table(
 	],
 );
 
-export const subCategoryInBase = base.table(
+export const subCategory = base.table(
 	"sub_category",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
@@ -195,12 +195,12 @@ export const subCategoryInBase = base.table(
 	(table) => [
 		foreignKey({
 			columns: [table.defaultStandardId],
-			foreignColumns: [complianceStandardInBase.id],
+			foreignColumns: [complianceStandard.id],
 			name: "base_sub_category_default_standard_id_fkey",
 		}).onDelete("set null"),
 		foreignKey({
 			columns: [table.mainCategoryId],
-			foreignColumns: [mainCategoryInBase.id],
+			foreignColumns: [mainCategory.id],
 			name: "base_sub_category_main_category_id_fkey",
 		}).onDelete("restrict"),
 		unique("base_sub_category_ss_code_key").on(table.ssCode),

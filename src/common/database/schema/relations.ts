@@ -1,152 +1,128 @@
 import { relations } from "drizzle-orm/relations";
 import {
-	organizationsInBase,
-	profilesInBase,
-	complianceStandardInBase,
-	subCategoryInBase,
-	mainCategoryInBase,
+	organizations,
+	profiles,
+	complianceStandard,
+	subCategory,
+	mainCategory,
 } from "./base";
-import { analysisTasksInComman } from "./comman";
+import { analysisTasks } from "./comman";
 import {
-	buildingsInSetup,
-	buildingComplianceDocumentsInSetup,
-	ownersInSetup,
-	buildingComplianceCategoryInSetup,
-	buildingComplianceCategoryInspectionsInSetup,
+	buildings,
+	buildingComplianceDocuments,
+	owners,
+	buildingComplianceCategory,
+	buildingComplianceCategoryInspections,
 } from "./setup";
 
-export const buildingComplianceDocumentsInSetupRelations = relations(
-	buildingComplianceDocumentsInSetup,
+export const buildingComplianceDocumentsRelations = relations(
+	buildingComplianceDocuments,
 	({ one, many }) => ({
-		buildingsInSetup: one(buildingsInSetup, {
-			fields: [buildingComplianceDocumentsInSetup.buildingId],
-			references: [buildingsInSetup.id],
+		building: one(buildings, {
+			fields: [buildingComplianceDocuments.buildingId],
+			references: [buildings.id],
 		}),
-		organizationsInBase: one(organizationsInBase, {
-			fields: [buildingComplianceDocumentsInSetup.organizationId],
-			references: [organizationsInBase.id],
+		organization: one(organizations, {
+			fields: [buildingComplianceDocuments.organizationId],
+			references: [organizations.id],
 		}),
-		buildingComplianceCategoryInSetups: many(buildingComplianceCategoryInSetup),
+		buildingComplianceCategories: many(buildingComplianceCategory),
 	}),
 );
 
-export const buildingsInSetupRelations = relations(
-	buildingsInSetup,
-	({ one, many }) => ({
-		analysisTasksInComman: many(analysisTasksInComman),
-		buildingComplianceDocumentsInSetups: many(
-			buildingComplianceDocumentsInSetup,
-		),
-		organizationsInBase: one(organizationsInBase, {
-			fields: [buildingsInSetup.organizationId],
-			references: [organizationsInBase.id],
-		}),
-		ownersInSetup: one(ownersInSetup, {
-			fields: [buildingsInSetup.ownerId],
-			references: [ownersInSetup.id],
-		}),
+export const buildingsRelations = relations(buildings, ({ one, many }) => ({
+	analysisTasks: many(analysisTasks),
+	buildingComplianceDocuments: many(buildingComplianceDocuments),
+	organization: one(organizations, {
+		fields: [buildings.organizationId],
+		references: [organizations.id],
 	}),
-);
-
-export const organizationsInBaseRelations = relations(
-	organizationsInBase,
-	({ many }) => ({
-		analysisTasksInComman: many(analysisTasksInComman),
-		buildingComplianceDocumentsInSetups: many(
-			buildingComplianceDocumentsInSetup,
-		),
-		profilesInBases: many(profilesInBase),
-		ownersInSetups: many(ownersInSetup),
-		buildingsInSetups: many(buildingsInSetup),
-	}),
-);
-
-export const profilesInBaseRelations = relations(
-	profilesInBase,
-	({ one, many }) => ({
-		analysisTasksInComman: many(analysisTasksInComman),
-		organizationsInBase: one(organizationsInBase, {
-			fields: [profilesInBase.organizationId],
-			references: [organizationsInBase.id],
-		}),
-	}),
-);
-
-export const analysisTasksInCommanRelations = relations(
-	analysisTasksInComman,
-	({ one }) => ({
-		organizationsInBase: one(organizationsInBase, {
-			fields: [analysisTasksInComman.organizationId],
-			references: [organizationsInBase.id],
-		}),
-		profilesInBase: one(profilesInBase, {
-			fields: [analysisTasksInComman.profilesId],
-			references: [profilesInBase.id],
-		}),
-		buildingsInSetup: one(buildingsInSetup, {
-			fields: [analysisTasksInComman.buildingId],
-			references: [buildingsInSetup.id],
-		}),
-	}),
-);
-
-export const ownersInSetupRelations = relations(
-	ownersInSetup,
-	({ one, many }) => ({
-		organizationsInBase: one(organizationsInBase, {
-			fields: [ownersInSetup.organizationId],
-			references: [organizationsInBase.id],
-		}),
-		buildingsInSetups: many(buildingsInSetup),
-	}),
-);
-
-export const buildingComplianceCategoryInspectionsInSetupRelations = relations(
-	buildingComplianceCategoryInspectionsInSetup,
-	({ one }) => ({
-		buildingComplianceCategoryInSetup: one(buildingComplianceCategoryInSetup, {
-			fields: [
-				buildingComplianceCategoryInspectionsInSetup.complianceCategoryId,
-			],
-			references: [buildingComplianceCategoryInSetup.id],
-		}),
-	}),
-);
-
-export const buildingComplianceCategoryInSetupRelations = relations(
-	buildingComplianceCategoryInSetup,
-	({ one, many }) => ({
-		buildingComplianceCategoryInspectionsInSetups: many(
-			buildingComplianceCategoryInspectionsInSetup,
-		),
-		buildingComplianceDocumentsInSetup: one(
-			buildingComplianceDocumentsInSetup,
-			{
-				fields: [buildingComplianceCategoryInSetup.documentId],
-				references: [buildingComplianceDocumentsInSetup.id],
-			},
-		),
-	}),
-);
-
-export const subCategoryInBaseRelations = relations(subCategoryInBase, ({ one }) => ({
-	complianceStandardInBase: one(complianceStandardInBase, {
-		fields: [subCategoryInBase.defaultStandardId],
-		references: [complianceStandardInBase.id],
-	}),
-	mainCategoryInBase: one(mainCategoryInBase, {
-		fields: [subCategoryInBase.mainCategoryId],
-		references: [mainCategoryInBase.id],
+	owner: one(owners, {
+		fields: [buildings.ownerId],
+		references: [owners.id],
 	}),
 }));
 
-export const complianceStandardInBaseRelations = relations(
-	complianceStandardInBase,
-	({ many }) => ({
-		subCategoryInBases: many(subCategoryInBase),
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+	analysisTasks: many(analysisTasks),
+	buildingComplianceDocuments: many(buildingComplianceDocuments),
+	profiles: many(profiles),
+	owners: many(owners),
+	buildings: many(buildings),
+}));
+
+export const profilesRelations = relations(profiles, ({ one, many }) => ({
+	analysisTasks: many(analysisTasks),
+	organization: one(organizations, {
+		fields: [profiles.organizationId],
+		references: [organizations.id],
+	}),
+}));
+
+export const analysisTasksRelations = relations(analysisTasks, ({ one }) => ({
+	organization: one(organizations, {
+		fields: [analysisTasks.organizationId],
+		references: [organizations.id],
+	}),
+	profile: one(profiles, {
+		fields: [analysisTasks.profilesId],
+		references: [profiles.id],
+	}),
+	building: one(buildings, {
+		fields: [analysisTasks.buildingId],
+		references: [buildings.id],
+	}),
+}));
+
+export const ownersRelations = relations(owners, ({ one, many }) => ({
+	organization: one(organizations, {
+		fields: [owners.organizationId],
+		references: [organizations.id],
+	}),
+	buildings: many(buildings),
+}));
+
+export const buildingComplianceCategoryInspectionsRelations = relations(
+	buildingComplianceCategoryInspections,
+	({ one }) => ({
+		buildingComplianceCategory: one(buildingComplianceCategory, {
+			fields: [buildingComplianceCategoryInspections.complianceCategoryId],
+			references: [buildingComplianceCategory.id],
+		}),
 	}),
 );
 
-export const mainCategoryInBaseRelations = relations(mainCategoryInBase, ({ many }) => ({
-	subCategoryInBases: many(subCategoryInBase),
+export const buildingComplianceCategoryRelations = relations(
+	buildingComplianceCategory,
+	({ one, many }) => ({
+		buildingComplianceCategoryInspections: many(
+			buildingComplianceCategoryInspections,
+		),
+		buildingComplianceDocument: one(buildingComplianceDocuments, {
+			fields: [buildingComplianceCategory.documentId],
+			references: [buildingComplianceDocuments.id],
+		}),
+	}),
+);
+
+export const subCategoryRelations = relations(subCategory, ({ one }) => ({
+	complianceStandard: one(complianceStandard, {
+		fields: [subCategory.defaultStandardId],
+		references: [complianceStandard.id],
+	}),
+	mainCategory: one(mainCategory, {
+		fields: [subCategory.mainCategoryId],
+		references: [mainCategory.id],
+	}),
+}));
+
+export const complianceStandardRelations = relations(
+	complianceStandard,
+	({ many }) => ({
+		subCategories: many(subCategory),
+	}),
+);
+
+export const mainCategoryRelations = relations(mainCategory, ({ many }) => ({
+	subCategories: many(subCategory),
 }));

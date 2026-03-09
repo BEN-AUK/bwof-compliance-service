@@ -8,25 +8,38 @@ import {
 	uuid,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { organizationsInBase, profilesInBase } from "./base";
-import { buildingsInSetup } from "./setup";
+import { organizations, profiles } from "./base";
+import { buildings } from "./setup";
 
 export const comman = pgSchema("comman");
 
-export const analysisTaskStatusEnumInComman = comman.enum(
+export const ANALYSIS_TASK_STATUS = {
+	PENDING: "PENDING",
+	PROCESSING: "PROCESSING",
+	COMPLETED: "COMPLETED",
+	FAILED: "FAILED",
+} as const;
+
+export type AnalysisTaskStatus =
+	(typeof ANALYSIS_TASK_STATUS)[keyof typeof ANALYSIS_TASK_STATUS];
+
+export const analysisTaskStatusEnum = comman.enum(
 	"analysis_task_status",
-	["PENDING", "PROCESSING", "COMPLETED", "FAILED"],
+	Object.values(ANALYSIS_TASK_STATUS) as [
+		AnalysisTaskStatus,
+		...AnalysisTaskStatus[],
+	],
 );
 
-export const analysisTasksInComman = comman.table(
+export const analysisTasks = comman.table(
 	"analysis_tasks",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
 		organizationId: uuid("organization_id").notNull(),
 		profilesId: uuid("profiles_id").notNull(),
 		buildingId: uuid("building_id").notNull(),
-		status: analysisTaskStatusEnumInComman("status")
-			.default("PENDING")
+		status: analysisTaskStatusEnum("status")
+			.default(ANALYSIS_TASK_STATUS.PENDING)
 			.notNull(),
 		filePath: text("file_path").notNull(),
 		errorMessage: text("error_message"),
@@ -50,27 +63,27 @@ export const analysisTasksInComman = comman.table(
 		),
 		foreignKey({
 			columns: [table.organizationId],
-			foreignColumns: [organizationsInBase.id],
+			foreignColumns: [organizations.id],
 			name: "analysis_tasks_organization_id_fkey",
 		}).onDelete("cascade"),
 		foreignKey({
 			columns: [table.profilesId],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "analysis_tasks_profiles_id_fkey",
 		}).onDelete("restrict"),
 		foreignKey({
 			columns: [table.buildingId],
-			foreignColumns: [buildingsInSetup.id],
+			foreignColumns: [buildings.id],
 			name: "analysis_tasks_building_id_fkey",
 		}).onDelete("cascade"),
 		foreignKey({
 			columns: [table.createdById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "analysis_tasks_created_by_id_fkey",
 		}).onDelete("restrict"),
 		foreignKey({
 			columns: [table.lastModifiedById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "analysis_tasks_last_modified_by_id_fkey",
 		}).onDelete("restrict"),
 		pgPolicy("Analysis tasks isolation", {

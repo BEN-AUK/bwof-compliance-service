@@ -12,11 +12,11 @@ import {
 	jsonb,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { organizationsInBase, profilesInBase } from "./base";
+import { organizations, profiles } from "./base";
 
 export const setup = pgSchema("setup");
 
-export const ownersInSetup = setup.table(
+export const owners = setup.table(
 	"owners",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
@@ -40,17 +40,17 @@ export const ownersInSetup = setup.table(
 	(table) => [
 		foreignKey({
 			columns: [table.organizationId],
-			foreignColumns: [organizationsInBase.id],
+			foreignColumns: [organizations.id],
 			name: "owners_organization_id_fkey",
 		}).onDelete("cascade"),
 		foreignKey({
 			columns: [table.createdById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "owners_created_by_id_fkey",
 		}).onDelete("restrict"),
 		foreignKey({
 			columns: [table.lastModifiedById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "owners_last_modified_by_id_fkey",
 		}).onDelete("restrict"),
 		pgPolicy("Users can manage owners in their organization", {
@@ -64,7 +64,7 @@ export const ownersInSetup = setup.table(
 	],
 );
 
-export const buildingsInSetup = setup.table(
+export const buildings = setup.table(
 	"buildings",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
@@ -93,22 +93,22 @@ export const buildingsInSetup = setup.table(
 	(table) => [
 		foreignKey({
 			columns: [table.organizationId],
-			foreignColumns: [organizationsInBase.id],
+			foreignColumns: [organizations.id],
 			name: "buildings_organization_id_fkey",
 		}).onDelete("cascade"),
 		foreignKey({
 			columns: [table.ownerId],
-			foreignColumns: [ownersInSetup.id],
+			foreignColumns: [owners.id],
 			name: "buildings_owner_id_fkey",
 		}).onDelete("set null"),
 		foreignKey({
 			columns: [table.createdById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "buildings_created_by_id_fkey",
 		}).onDelete("restrict"),
 		foreignKey({
 			columns: [table.lastModifiedById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "buildings_last_modified_by_id_fkey",
 		}).onDelete("restrict"),
 		pgPolicy("Users can manage buildings in their organization", {
@@ -122,7 +122,7 @@ export const buildingsInSetup = setup.table(
 	],
 );
 
-export const buildingComplianceDocumentsInSetup = setup.table(
+export const buildingComplianceDocuments = setup.table(
 	"building_compliance_documents",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
@@ -150,22 +150,22 @@ export const buildingComplianceDocumentsInSetup = setup.table(
 	(table) => [
 		foreignKey({
 			columns: [table.buildingId],
-			foreignColumns: [buildingsInSetup.id],
+			foreignColumns: [buildings.id],
 			name: "bldg_comp_docs_bldg_fkey",
 		}).onDelete("cascade"),
 		foreignKey({
 			columns: [table.organizationId],
-			foreignColumns: [organizationsInBase.id],
+			foreignColumns: [organizations.id],
 			name: "bldg_comp_docs_org_fkey",
 		}).onDelete("cascade"),
 		foreignKey({
 			columns: [table.createdById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "bldg_comp_docs_created_by_id_fkey",
 		}).onDelete("restrict"),
 		foreignKey({
 			columns: [table.lastModifiedById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "bldg_comp_docs_last_modified_by_id_fkey",
 		}).onDelete("restrict"),
 		pgPolicy("Docs isolation", {
@@ -179,7 +179,7 @@ export const buildingComplianceDocumentsInSetup = setup.table(
 	],
 );
 
-export const buildingComplianceCategoryInSetup = setup.table(
+export const buildingComplianceCategory = setup.table(
 	"building_compliance_category",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
@@ -203,17 +203,17 @@ export const buildingComplianceCategoryInSetup = setup.table(
 	(table) => [
 		foreignKey({
 			columns: [table.documentId],
-			foreignColumns: [buildingComplianceDocumentsInSetup.id],
+			foreignColumns: [buildingComplianceDocuments.id],
 			name: "bcc_document_fkey",
 		}).onDelete("cascade"),
 		foreignKey({
 			columns: [table.createdById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "bcc_created_by_id_fkey",
 		}).onDelete("restrict"),
 		foreignKey({
 			columns: [table.lastModifiedById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "bcc_last_modified_by_id_fkey",
 		}).onDelete("restrict"),
 		pgPolicy("Category isolation", {
@@ -229,7 +229,7 @@ export const buildingComplianceCategoryInSetup = setup.table(
 	],
 );
 
-export const buildingComplianceCategoryInspectionsInSetup = setup.table(
+export const buildingComplianceCategoryInspections = setup.table(
 	"building_compliance_category_inspections",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),
@@ -261,17 +261,17 @@ export const buildingComplianceCategoryInspectionsInSetup = setup.table(
 		),
 		foreignKey({
 			columns: [table.complianceCategoryId],
-			foreignColumns: [buildingComplianceCategoryInSetup.id],
+			foreignColumns: [buildingComplianceCategory.id],
 			name: "building_ss_inspections_parent_fkey",
 		}).onDelete("cascade"),
 		foreignKey({
 			columns: [table.createdById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "bcci_created_by_id_fkey",
 		}).onDelete("restrict"),
 		foreignKey({
 			columns: [table.lastModifiedById],
-			foreignColumns: [profilesInBase.id],
+			foreignColumns: [profiles.id],
 			name: "bcci_last_modified_by_id_fkey",
 		}).onDelete("restrict"),
 		pgPolicy("Inspections isolation", {
