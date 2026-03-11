@@ -19,7 +19,7 @@ import { TaskService } from '../src/common/services/task.service';
 
 const PROFILE_ID = '7451ae58-b6d7-492a-9b54-729e336ab538';
 const FILE_PATH =
-  'https://ckaavxsflcvgcdckzrdv.supabase.co/storage/v1/object/sign/cs_documents/temp/difficault-1-exemplar-compliance-schedule-1772970727968-vf25ddd8.pdf?token=eyJraWQiOiJzdG9yYWdlLXVybC1zaWduaW5nLWtleV83ZmMwZDM0OS1mMjM3LTQxNDUtYjkxNC0zNDE3NTA3OTUxZjAiLCJhbGciOiJIUzI1NiJ9.eyJ1cmwiOiJjc19kb2N1bWVudHMvdGVtcC9kaWZmaWNhdWx0LTEtZXhlbXBsYXItY29tcGxpYW5jZS1zY2hlZHVsZS0xNzcyOTcwNzI3OTY4LXZmMjVkZGQ4LnBkZiIsImlhdCI6MTc3MzIyMzMwNiwiZXhwIjoxNzczODI4MTA2fQ.89JoclrgvF5wArpn_Uxohd5sAPaUMnHC3ii7W-sflUM';
+  'temp/difficault-1-exemplar-compliance-schedule-1772970727968-vf25ddd8.pdf';
 
 const mockAuthContext: AuthContext = {
   getProfileId: () => PROFILE_ID,
