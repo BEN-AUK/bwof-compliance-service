@@ -1,0 +1,8 @@
+# BullMQ queue default job options. Loaded by ConfigModule and used in SetupModule.
+csAnalysisQueue:
+  defaultJobOptions:
+    removeOnComplete: true   # save Redis space
+    attempts: 3               # auto retry
+    backoff:
+      type: exponential
+      delay: 5000             # ms

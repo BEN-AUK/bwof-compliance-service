@@ -31,7 +31,6 @@ export const buildingComplianceDocumentsRelations = relations(
 );
 
 export const buildingsRelations = relations(buildings, ({ one, many }) => ({
-	analysisTasks: many(analysisTasks),
 	buildingComplianceDocuments: many(buildingComplianceDocuments),
 	organization: one(organizations, {
 		fields: [buildings.organizationId],
@@ -67,10 +66,6 @@ export const analysisTasksRelations = relations(analysisTasks, ({ one }) => ({
 	profile: one(profiles, {
 		fields: [analysisTasks.profilesId],
 		references: [profiles.id],
-	}),
-	building: one(buildings, {
-		fields: [analysisTasks.buildingId],
-		references: [buildings.id],
 	}),
 }));
 

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { type DrizzleDB, DRIZZLE } from '../database.module';
 import {
   ANALYSIS_TASK_STATUS,
@@ -9,13 +9,13 @@ import {
 export interface CreatePendingTaskInput {
   organizationId: string;
   profilesId: string;
-  buildingId: string;
   filePath: string;
 }
 
 export interface AnalysisTaskRecord {
   id: string;
   profilesId: string;
+  filePath: string;
 }
 
 @Injectable()
@@ -31,7 +31,6 @@ export class TaskRepository {
       .values({
         organizationId: input.organizationId,
         profilesId: input.profilesId,
-        buildingId: input.buildingId,
         status: ANALYSIS_TASK_STATUS.PENDING,
         filePath: input.filePath,
         createdById: input.profilesId,
@@ -47,6 +46,7 @@ export class TaskRepository {
       .select({
         id: analysisTasks.id,
         profilesId: analysisTasks.profilesId,
+        filePath: analysisTasks.filePath,
       })
       .from(analysisTasks)
       .where(eq(analysisTasks.id, taskId))
@@ -69,6 +69,33 @@ export class TaskRepository {
         and(
           eq(analysisTasks.id, taskId),
           eq(analysisTasks.status, ANALYSIS_TASK_STATUS.PENDING),
+        ),
+      )
+      .returning({ id: analysisTasks.id });
+
+    return task?.id ?? null;
+  }
+
+
+  /**
+   * Completes a task that is currently PROCESSING with a result (idempotent).
+   * Returns the task id if updated, null if task not found or not in PROCESSING.
+   */
+  async completeTaskSuccessWithResult(
+    taskId: string,
+    result: object,
+  ): Promise<string | null> {
+    const [task] = await this.db
+      .update(analysisTasks)
+      .set({
+        status: ANALYSIS_TASK_STATUS.COMPLETED,
+        result: result as Record<string, unknown>,
+        lastModifiedById: sql`${analysisTasks.profilesId}`,
+      })
+      .where(
+        and(
+          eq(analysisTasks.id, taskId),
+          eq(analysisTasks.status, ANALYSIS_TASK_STATUS.PROCESSING),
         ),
       )
       .returning({ id: analysisTasks.id });

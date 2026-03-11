@@ -4,9 +4,11 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { createClient, type User } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import type { Request } from 'express';
+import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
 /** 附加到 Request 上的用户信息，供后续 RLS 透传（set_config('request.jwt.claims', ...)）使用 */
 export interface RequestUser {
@@ -31,9 +33,20 @@ declare global {
  */
 @Injectable()
 export class SupabaseAuthGuard implements CanActivate {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly reflector: Reflector,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.get<boolean>(
+      IS_PUBLIC_KEY,
+      context.getHandler(),
+    );
+    if (isPublic) {
+      return true;
+    }
+
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers.authorization;
     const token = this.extractBearerToken(authHeader);

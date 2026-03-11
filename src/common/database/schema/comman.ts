@@ -1,6 +1,7 @@
 import {
 	index,
 	foreignKey,
+	jsonb,
 	pgPolicy,
 	pgSchema,
 	text,
@@ -9,7 +10,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { organizations, profiles } from "./base";
-import { buildings } from "./setup";
 
 export const comman = pgSchema("comman");
 
@@ -37,12 +37,12 @@ export const analysisTasks = comman.table(
 		id: uuid().defaultRandom().primaryKey().notNull(),
 		organizationId: uuid("organization_id").notNull(),
 		profilesId: uuid("profiles_id").notNull(),
-		buildingId: uuid("building_id").notNull(),
 		status: analysisTaskStatusEnum("status")
 			.default(ANALYSIS_TASK_STATUS.PENDING)
 			.notNull(),
 		filePath: text("file_path").notNull(),
 		errorMessage: text("error_message"),
+		result: jsonb("result"),
 		createdAt: timestamp("created_at", {
 			withTimezone: true,
 			mode: "string",
@@ -71,11 +71,6 @@ export const analysisTasks = comman.table(
 			foreignColumns: [profiles.id],
 			name: "analysis_tasks_profiles_id_fkey",
 		}).onDelete("restrict"),
-		foreignKey({
-			columns: [table.buildingId],
-			foreignColumns: [buildings.id],
-			name: "analysis_tasks_building_id_fkey",
-		}).onDelete("cascade"),
 		foreignKey({
 			columns: [table.createdById],
 			foreignColumns: [profiles.id],
