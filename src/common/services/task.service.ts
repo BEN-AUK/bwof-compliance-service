@@ -7,7 +7,7 @@ import {
   ProfileRepository,
   TaskRepository,
 } from '../database/repositories';
-import { ANALYSIS_TASK_STATUS } from '../database/schema/comman';
+import { ANALYSIS_TASK_STATUS } from '../database/schema/common';
 import { AuthContext } from './auth-context.service';
 
 @Injectable()

@@ -1,31 +1,46 @@
 import { Processor } from '@nestjs/bullmq';
 import type { Job } from 'bullmq';
+import { unlink } from 'node:fs/promises';
 import { BaseAnalysisTaskProcessor } from '../../../common/queue/base-analysis-task.processor';
 import {
   CS_ANALYSIS_QUEUE,
   type CsAnalysisJobPayload,
 } from '../../../common/queue/constants';
+import { FileService } from '../../../common/services/file.service';
+import { GoogleFileApiService } from '../../../common/services/google-file-api.service';
 import { TaskService } from '../../../common/services/task.service';
 
 @Processor(CS_ANALYSIS_QUEUE, { concurrency: 2 })
 export class TaskProcessor extends BaseAnalysisTaskProcessor<CsAnalysisJobPayload> {
-  constructor(taskService: TaskService) {
+  constructor(
+    taskService: TaskService,
+    private readonly fileService: FileService,
+    private readonly googleFileApi: GoogleFileApiService,
+  ) {
     super(taskService);
   }
 
   /**
-   * Mock: 5s delay then return mock JSON. Next step: use BucketService/FileService
-   * to resolve filePath to FileUploadInput and call CsDocumentAnalyzeService.analyze().
+   * Resolve storage path → stream download to temp file → upload to Google File API → return upload result as task result.
    */
   protected override async executeAiAnalysis(
-    _filePath: string,
+    filePath: string,
     _job: Job<CsAnalysisJobPayload, unknown, string>,
   ): Promise<object> {
-    return new Promise((resolve) => {
-      setTimeout(
-        () => resolve({ summary: 'mock', score: 0 }),
-        5000,
-      );
-    });
+    const { path: localPath, mimeType } =
+      await this.fileService.resolveToUploadSource(filePath);
+    try {
+      const result = await this.googleFileApi.upload({
+        filePath: localPath,
+        mimeType,
+      });
+      return { uploadedFile: result };
+    } finally {
+      try {
+        await unlink(localPath);
+      } catch {
+        // ignore cleanup failure
+      }
+    }
   }
 }

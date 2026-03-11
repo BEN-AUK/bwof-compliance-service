@@ -11,7 +11,7 @@ import {
 import { sql } from "drizzle-orm";
 import { organizations, profiles } from "./base";
 
-export const comman = pgSchema("comman");
+export const common = pgSchema("common");
 
 export const ANALYSIS_TASK_STATUS = {
 	PENDING: "PENDING",
@@ -23,7 +23,7 @@ export const ANALYSIS_TASK_STATUS = {
 export type AnalysisTaskStatus =
 	(typeof ANALYSIS_TASK_STATUS)[keyof typeof ANALYSIS_TASK_STATUS];
 
-export const analysisTaskStatusEnum = comman.enum(
+export const analysisTaskStatusEnum = common.enum(
 	"analysis_task_status",
 	Object.values(ANALYSIS_TASK_STATUS) as [
 		AnalysisTaskStatus,
@@ -31,7 +31,7 @@ export const analysisTaskStatusEnum = comman.enum(
 	],
 );
 
-export const analysisTasks = comman.table(
+export const analysisTasks = common.table(
 	"analysis_tasks",
 	{
 		id: uuid().defaultRandom().primaryKey().notNull(),

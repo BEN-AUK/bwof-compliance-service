@@ -1,4 +1,4 @@
 export * from "./base";
-export * from "./comman";
+export * from "./common";
 export * from "./setup";
 export * from "./relations";

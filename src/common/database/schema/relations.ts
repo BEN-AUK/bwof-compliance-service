@@ -6,7 +6,7 @@ import {
 	subCategory,
 	mainCategory,
 } from "./base";
-import { analysisTasks } from "./comman";
+import { analysisTasks } from "./common";
 import {
 	buildings,
 	buildingComplianceDocuments,

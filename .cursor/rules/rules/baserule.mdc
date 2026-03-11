@@ -14,7 +14,7 @@
 ## 2. 类型安全与数据定义 (Strict TypeScript)
 - **零 any 准则**: 项目中严禁出现 `any`。所有 DTO、Service 入参出参必须具备严格类型。
 - **Schema Single Source of Truth**: 数据库的表结构是唯一事实来源。所有针对 Supabase 的调用或 ORM 模型必须与 `src/lib/database.types.ts`（或生成的 Schema 文件）严格对齐。
-- **Schema 变量命名去除 Schema 后缀**: 在 Drizzle Schema 文件中，表变量名只表达业务实体本身，如 `organizations`、`profiles`、`analysisTasks`，禁止使用 `organizationsInBase`、`buildingsInSetup`、`analysisTasksInComman` 这类把 schema 信息拼进变量名的写法。Schema 信息应由 `pgSchema(...)` 和实际数据库路径承担，而不是污染 TypeScript 标识符。
+- **Schema 变量命名去除 Schema 后缀**: 在 Drizzle Schema 文件中，表变量名只表达业务实体本身，如 `organizations`、`profiles`、`analysisTasks`，禁止使用 `organizationsInBase`、`buildingsInSetup`、`analysisTasksInCommon` 这类把 schema 信息拼进变量名的写法。Schema 信息应由 `pgSchema(...)` 和实际数据库路径承担，而不是污染 TypeScript 标识符。
 - **JSONB 强约束**: 写入 PostgreSQL `jsonb` 字段的数据（如 `inspection_instructions`、`metadata`），必须在 `src/types/` 下定义严格的 `Interface` 或使用 `Zod` Schema。入库前必须经过校验，拒绝 Schema-less 的脏数据。
 
 ## 3. 项目结构与模块化 (Code Architecture)

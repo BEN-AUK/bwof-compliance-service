@@ -4,7 +4,7 @@ import { type DrizzleDB, DRIZZLE } from '../database.module';
 import {
   ANALYSIS_TASK_STATUS,
   analysisTasks,
-} from '../schema/comman';
+} from '../schema/common';
 
 export interface CreatePendingTaskInput {
   organizationId: string;

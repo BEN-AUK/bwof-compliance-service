@@ -6,6 +6,7 @@ import { AiService } from './services/ai.service';
 import { AuthContext } from './services/auth-context.service';
 import { BucketService } from './services/bucket.service';
 import { FileService } from './services/file.service';
+import { GoogleFileApiService } from './services/google-file-api.service';
 import { InfraService } from './services/infra.service';
 import { TaskService } from './services/task.service';
 import { TaskCreatedWebhookController } from './webhooks/task-created.webhook.controller';
@@ -22,6 +23,7 @@ import { TaskCreatedWebhookController } from './webhooks/task-created.webhook.co
     AiService,
     AuthContext,
     FileService,
+    GoogleFileApiService,
     TaskService,
   ],
   exports: [
@@ -32,6 +34,7 @@ import { TaskCreatedWebhookController } from './webhooks/task-created.webhook.co
     AiService,
     AuthContext,
     FileService,
+    GoogleFileApiService,
     TaskService,
     QueueModule,
   ],

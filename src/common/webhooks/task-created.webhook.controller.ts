@@ -37,7 +37,7 @@ export class TaskCreatedWebhookController {
   ) {}
 
   /**
-   * Receives Supabase Database Webhook on INSERT into comman.analysis_tasks.
+   * Receives Supabase Database Webhook on INSERT into common.analysis_tasks.
    * Enqueues an analysis job. Use @Public() so Supabase (no JWT) can call this.
    */
   @Public()
@@ -60,7 +60,7 @@ export class TaskCreatedWebhookController {
     if (body.type !== 'INSERT') {
       throw new BadRequestException('webhook.expected_insert');
     }
-    if (body.table !== 'analysis_tasks' || body.schema !== 'comman') {
+    if (body.table !== 'analysis_tasks' || body.schema !== 'common') {
       throw new BadRequestException('webhook.unexpected_table');
     }
 
@@ -80,7 +80,7 @@ export class TaskCreatedWebhookController {
     }
 
     try {
-      await this.queueTaskService.enqueueAnalysisJob(taskId, organizationId);
+      this.queueTaskService.enqueueAnalysisJob(taskId, organizationId);
       return { ok: true };
     } catch (error) {
       if (error instanceof NotFoundException) {
