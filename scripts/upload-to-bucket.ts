@@ -14,13 +14,24 @@ import { config } from 'dotenv';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 import { createClient } from '@supabase/supabase-js';
+import { lookup } from 'dns/promises';
 
 const DEFAULT_FILE =
-  'resource/building compliance/wrong_file.pdf';
-const BUCKET_NAME = 'temp';
+  'resource/building compliance/cs_sample.pdf';
+const BUCKET_NAME = 'cs_documents';
 
 config({ path: resolve(process.cwd(), '.env.local') });
 config({ path: resolve(process.cwd(), '.env') });
+
+async function networkProbe(host: string) {
+  console.log(`[PROBE] Diagnosing connection to: ${host}`);
+  try {
+    const address = await lookup(host);
+    console.log(`[PROBE] DNS Success: ${address.address} (Family: IPv${address.family})`);
+  } catch (err: any) {
+    console.error(`[PROBE] DNS FAILED: ${err.message}`);
+  }
+}
 
 function buildUniquePath(prefix: string, originalName: string): string {
   const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 128);
@@ -47,7 +58,7 @@ function getMimeType(filePath: string): string {
 async function main(): Promise<void> {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
+  await networkProbe('ckaavxsflcvgcdckzrdv.supabase.co');
   if (!url || !key) {
     console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env');
     process.exit(1);
@@ -58,7 +69,7 @@ async function main(): Promise<void> {
   const buffer = await readFile(resolvedPath);
   const originalName = filePath.replace(/^.*[\\/]/, '');
   const contentType = getMimeType(filePath);
-  const storagePath = buildUniquePath(BUCKET_NAME, originalName);
+  const storagePath = buildUniquePath("temp", originalName);
   const blob = new Blob([buffer], { type: contentType });
   //const supabase = createClient(url, key, { auth: { persistSession: false } });
   const fileBuffer = await readFile(resolvedPath);
