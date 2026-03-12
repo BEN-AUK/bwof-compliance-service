@@ -36,6 +36,12 @@ export interface ResolvedUploadSource {
   mimeType: string;
 }
 
+/** Result of resolving a storage path to an in-memory buffer. */
+export interface ResolvedBufferSource {
+  buffer: Buffer;
+  mimeType: string;
+}
+
 const EXT_TO_MIMETYPE: Record<string, string> = {
   pdf: 'application/pdf',
   jpg: 'image/jpeg',
@@ -134,6 +140,44 @@ export class FileService {
       }
       throw err;
     }
+  }
+
+  /**
+   * Resolve a Storage path (bucket object key) to an in-memory buffer and mimeType.
+   * Downloads via signed URL and collects the response body into a Buffer.
+   */
+  async resolveToBuffer(storagePath: string): Promise<ResolvedBufferSource> {
+    const { signedUrl } = await this.bucket.createSignedUrl(
+      storagePath,
+      this.signedUrlExpirySeconds,
+    );
+
+    const ext = this.getExtension(storagePath);
+    const mimeType = ext
+      ? EXT_TO_MIMETYPE[ext.toLowerCase()] ?? 'application/octet-stream'
+      : 'application/octet-stream';
+
+    const response = await fetch(signedUrl);
+    if (!response.ok) {
+      throw new InternalServerErrorException(
+        `file.resolve_storage_fetch_failed: ${response.status} ${response.statusText}`,
+      );
+    }
+    const body = response.body;
+    if (!body) {
+      throw new InternalServerErrorException(
+        'file.resolve_storage_empty_response_body',
+      );
+    }
+
+    const chunks: Buffer[] = [];
+    const readable = Readable.fromWeb(body as import('stream/web').ReadableStream);
+    for await (const chunk of readable) {
+      chunks.push(Buffer.from(chunk));
+    }
+    const buffer = Buffer.concat(chunks);
+    this.logger.debug(`Resolved storage file to buffer: ${buffer.length} bytes`);
+    return { buffer, mimeType };
   }
 
   private getExtension(storagePath: string): string {

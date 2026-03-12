@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
+import { TaskRepository } from '../database/repositories/task.repository';
 import {
   CS_ANALYSIS_QUEUE,
   getCsAnalysisQueueDefaultJobOptions,
@@ -8,9 +9,11 @@ import {
 } from './constants';
 import { getRedisConnectionOptions } from './redis-options.helper';
 import { QueueTaskService } from './queue-task.service';
+import { DatabaseModule } from '../database/database.module';
 
 @Module({
   imports: [
+    DatabaseModule,
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -30,7 +33,7 @@ import { QueueTaskService } from './queue-task.service';
       }),
     }),
   ],
-  providers: [QueueTaskService],
+  providers: [TaskRepository, QueueTaskService],
   exports: [QueueTaskService],
 })
 export class QueueModule {}

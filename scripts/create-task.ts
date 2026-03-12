@@ -14,6 +14,7 @@ import {
   ProfileRepository,
   TaskRepository,
 } from '../src/common/database/repositories';
+import { QueueModule } from '../src/common/queue/queue.module';
 import { AuthContext } from '../src/common/services/auth-context.service';
 import { TaskService } from '../src/common/services/task.service';
 
@@ -34,6 +35,7 @@ const mockAuthContext: AuthContext = {
       envFilePath: ['.env.local', '.env'],
     }),
     DatabaseModule,
+    QueueModule,
   ],
   providers: [
     { provide: AuthContext, useValue: mockAuthContext },
