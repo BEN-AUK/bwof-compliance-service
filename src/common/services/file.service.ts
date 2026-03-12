@@ -4,11 +4,6 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createWriteStream } from 'node:fs';
-import { unlink } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { pipeline } from 'node:stream/promises';
 import { Readable } from 'node:stream';
 import { BucketService } from './bucket.service';
 
@@ -28,12 +23,6 @@ export interface NormalizedFileInput {
   buffer: Buffer;
   mimeType: string;
   originalName: string;
-}
-
-/** Result of resolving a storage path to a local file ready for upload. */
-export interface ResolvedUploadSource {
-  path: string;
-  mimeType: string;
 }
 
 /** Result of resolving a storage path to an in-memory buffer. */
@@ -88,58 +77,6 @@ export class FileService {
       mimeType: file.mimetype ?? 'application/octet-stream',
       originalName: file.originalname ?? `upload-${Date.now()}`,
     };
-  }
-
-  /**
-   * Resolve a Storage path (bucket object key) to a local temp file path and mimeType.
-   * Uses streaming download to avoid loading the full file into memory.
-   * Caller is responsible for deleting the temp file after use.
-   */
-  async resolveToUploadSource(
-    storagePath: string,
-  ): Promise<ResolvedUploadSource> {
-    const { signedUrl } = await this.bucket.createSignedUrl(
-      storagePath,
-      this.signedUrlExpirySeconds,
-    );
-
-    const ext = this.getExtension(storagePath);
-    const mimeType = ext
-      ? EXT_TO_MIMETYPE[ext.toLowerCase()] ?? 'application/octet-stream'
-      : 'application/octet-stream';
-    const tempPath = join(
-      tmpdir(),
-      `gemini-upload-${Date.now()}-${Math.random().toString(36).slice(2, 10)}${ext ? `.${ext}` : ''}`,
-    );
-
-    try {
-      const response = await fetch(signedUrl);
-      if (!response.ok) {
-        throw new InternalServerErrorException(
-          `file.resolve_storage_fetch_failed: ${response.status} ${response.statusText}`,
-        );
-      }
-      const body = response.body;
-      if (!body) {
-        throw new InternalServerErrorException(
-          'file.resolve_storage_empty_response_body',
-        );
-      }
-      const writable = createWriteStream(tempPath);
-      await pipeline(
-        Readable.fromWeb(body as import('stream/web').ReadableStream),
-        writable,
-      );
-      this.logger.debug(`Streamed storage file to temp: ${tempPath}`);
-      return { path: tempPath, mimeType };
-    } catch (err) {
-      try {
-        await unlink(tempPath).catch(() => {});
-      } catch {
-        // ignore cleanup failure
-      }
-      throw err;
-    }
   }
 
   /**

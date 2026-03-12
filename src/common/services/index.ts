@@ -5,11 +5,7 @@ export {
   FileService,
   type FileUploadInput,
   type NormalizedFileInput,
-  type ResolvedUploadSource,
+  type ResolvedBufferSource,
 } from './file.service';
-export {
-  GoogleFileApiService,
-  type GeminiFileResult,
-} from './google-file-api.service';
 export { InfraService } from './infra.service';
 export { TaskService } from './task.service';
