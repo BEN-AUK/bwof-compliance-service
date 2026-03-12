@@ -9,6 +9,7 @@ import {
 } from '../database/repositories';
 import { ANALYSIS_TASK_STATUS } from '../database/schema/common';
 import { AuthContext } from './auth-context.service';
+import { QueueTaskService } from '../queue/queue-task.service';
 
 @Injectable()
 export class TaskService {
@@ -16,6 +17,7 @@ export class TaskService {
     private readonly authContext: AuthContext,
     private readonly profileRepository: ProfileRepository,
     private readonly taskRepository: TaskRepository,
+    private readonly queueTaskService: QueueTaskService,
   ) {}
 
   async createTask(filePath: string): Promise<string> {
@@ -27,11 +29,14 @@ export class TaskService {
       throw new NotFoundException(`Profile not found: ${profileId}`);
     }
 
-    return this.taskRepository.createPendingTask({
+    const taskId = await this.taskRepository.createPendingTask({
       organizationId,
       profilesId: profileId,
       filePath,
     });
+
+    await this.queueTaskService.enqueueAnalysisJob(taskId, organizationId);
+    return taskId;
   }
 
   /**
