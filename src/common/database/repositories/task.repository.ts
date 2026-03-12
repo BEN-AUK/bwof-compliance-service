@@ -102,4 +102,32 @@ export class TaskRepository {
 
     return task?.id ?? null;
   }
+
+  /**
+   * Marks a task that is currently PROCESSING as FAILED with error message and optional result (idempotent).
+   * Returns the task id if updated, null if task not found or not in PROCESSING.
+   */
+  async completeTaskFailureWithError(
+    taskId: string,
+    errorMessage: string,
+    result?: object,
+  ): Promise<string | null> {
+    const [task] = await this.db
+      .update(analysisTasks)
+      .set({
+        status: ANALYSIS_TASK_STATUS.FAILED,
+        errorMessage,
+        ...(result != null && { result: result as Record<string, unknown> }),
+        lastModifiedById: sql`${analysisTasks.profilesId}`,
+      })
+      .where(
+        and(
+          eq(analysisTasks.id, taskId),
+          eq(analysisTasks.status, ANALYSIS_TASK_STATUS.PROCESSING),
+        ),
+      )
+      .returning({ id: analysisTasks.id });
+
+    return task?.id ?? null;
+  }
 }

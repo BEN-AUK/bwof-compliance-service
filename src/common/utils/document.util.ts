@@ -11,10 +11,31 @@ export interface DocumentIndexLike {
   ss_ranges: readonly (readonly number[])[];
 }
 
+const MIN_PDF_SIZE = 100;
+const PDF_MAGIC = Buffer.from('%PDF', 'ascii');
+
 /**
  * Document utilities: PDF text extraction and page range collection.
  */
 export class DocumentUtil {
+  /**
+   * Ensure buffer looks like a PDF (size + magic bytes). Throws with a clear message if not.
+   */
+  static assertValidPdfBuffer(buffer: Buffer): void {
+    if (buffer.length < MIN_PDF_SIZE) {
+      throw new Error(
+        `File too small to be a valid PDF (${buffer.length} bytes). ` +
+          'Check that the storage path points to the actual document and upload completed.',
+      );
+    }
+    if (!buffer.subarray(0, PDF_MAGIC.length).equals(PDF_MAGIC)) {
+      throw new Error(
+        `Buffer does not start with PDF magic "%PDF" (got ${buffer.subarray(0, 8).toString('ascii')}). ` +
+          'File may be corrupted or not a PDF.',
+      );
+    }
+  }
+
   /**
    * Extract text from PDF with page markers for 0-based page indexing.
    * Output format: "--- PAGE 0 ---\n[text]\n--- PAGE 1 ---\n[text]..."
@@ -75,6 +96,7 @@ export class DocumentUtil {
     buffer: Buffer,
     options?: { minTextLength?: number },
   ): Promise<{ useTextPath: boolean; extractedText: string }> {
+    DocumentUtil.assertValidPdfBuffer(buffer);
     const minTextLength = options?.minTextLength ?? 200;
     const extractedText = await DocumentUtil.extractTextWithPageMarkers(buffer);
     const useTextPath = extractedText.length > minTextLength;

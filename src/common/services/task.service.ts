@@ -71,11 +71,26 @@ export class TaskService {
 
   /**
    * Completes a task with analysis result. Idempotent: only updates when status is PROCESSING.
+   * When opts.failed is true, result should contain { error: string }; task is marked FAILED with errorMessage and optional result.
    */
-  async updateTaskResult(taskId: string, result: object): Promise<void> {
+  async updateTaskResult(
+    taskId: string,
+    result: object,
+    opts?: { failed?: boolean },
+  ): Promise<void> {
     try {
       if (typeof taskId !== 'string' || result == null) return;
-      await this.taskRepository.completeTaskSuccessWithResult(taskId, result);
+      if (opts?.failed === true) {
+        const errorMessage =
+          (result as { error?: string }).error ?? String(result);
+        await this.taskRepository.completeTaskFailureWithError(
+          taskId,
+          errorMessage,
+          result,
+        );
+      } else {
+        await this.taskRepository.completeTaskSuccessWithResult(taskId, result);
+      }
     } catch {
       // Defensive: avoid throwing so callers (e.g. queue workers) can continue
     }

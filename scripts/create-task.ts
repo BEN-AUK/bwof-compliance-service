@@ -20,7 +20,7 @@ import { TaskService } from '../src/common/services/task.service';
 
 const PROFILE_ID = '7451ae58-b6d7-492a-9b54-729e336ab538';
 const FILE_PATH =
-  'temp/difficault-1-exemplar-compliance-schedule-1772970727968-vf25ddd8.pdf';
+  'temp/cs_sample.pdf';
 
 const mockAuthContext: AuthContext = {
   getProfileId: () => PROFILE_ID,

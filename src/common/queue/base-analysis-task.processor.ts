@@ -45,6 +45,19 @@ export abstract class BaseAnalysisTaskProcessor<
         `Analysis job failed: taskId=${taskId}, jobId=${job.id}, error=${String(error)}`,
         (error as Error)?.stack,
       );
+      if (taskId && typeof taskId === 'string') {
+        const maxAttempts = job.opts.attempts ?? 1;
+        const isLastAttempt = job.attemptsMade + 1 >= maxAttempts;
+        if (isLastAttempt) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          await this.taskService.updateTaskResult(
+            taskId,
+            { error: errorMessage },
+            { failed: true },
+          );
+        }
+      }
       throw error;
     }
   }

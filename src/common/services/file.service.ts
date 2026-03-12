@@ -4,8 +4,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Readable } from 'node:stream';
-import { BucketService } from './bucket.service';
+import { InfraService } from './infra.service';
 
 /**
  * Multer-style file input (Express.Multer.File compatible), avoids Express namespace.
@@ -14,10 +13,10 @@ import { BucketService } from './bucket.service';
 export type FileUploadInput =
   | Buffer
   | {
-      buffer: Buffer;
-      mimetype?: string;
-      originalname?: string;
-    };
+    buffer: Buffer;
+    mimetype?: string;
+    originalname?: string;
+  };
 
 export interface NormalizedFileInput {
   buffer: Buffer;
@@ -51,14 +50,14 @@ const EXT_TO_MIMETYPE: Record<string, string> = {
 @Injectable()
 export class FileService {
   private readonly logger = new Logger(FileService.name);
-  private readonly signedUrlExpirySeconds: number;
+  private readonly storageBucket: string;
 
   constructor(
-    private readonly bucket: BucketService,
+    private readonly infra: InfraService,
     private readonly config: ConfigService,
   ) {
-    this.signedUrlExpirySeconds =
-      Number(this.config.get<string>('SIGNED_URL_EXPIRY_SECONDS')) || 300;
+    this.storageBucket =
+      this.config.get<string>('STORAGE_BUCKET') ?? 'documents';
   }
 
   /**
@@ -81,40 +80,49 @@ export class FileService {
 
   /**
    * Resolve a Storage path (bucket object key) to an in-memory buffer and mimeType.
-   * Downloads via signed URL and collects the response body into a Buffer.
+   * Uses Supabase Storage SDK direct download (no signed URL + fetch).
    */
   async resolveToBuffer(storagePath: string): Promise<ResolvedBufferSource> {
-    const { signedUrl } = await this.bucket.createSignedUrl(
-      storagePath,
-      this.signedUrlExpirySeconds,
-    );
+    const supabase = this.infra.getSupabaseAdmin();
+    const { data, error } = await supabase.storage
+      .from(this.storageBucket)
+      .download(storagePath);
 
-    const ext = this.getExtension(storagePath);
-    const mimeType = ext
-      ? EXT_TO_MIMETYPE[ext.toLowerCase()] ?? 'application/octet-stream'
-      : 'application/octet-stream';
-
-    const response = await fetch(signedUrl);
-    if (!response.ok) {
+    if (error) {
+      this.logger.warn(`Storage download failed: ${error.message}`, error);
       throw new InternalServerErrorException(
-        `file.resolve_storage_fetch_failed: ${response.status} ${response.statusText}`,
+        `file.resolve_storage_download_failed: ${error.message}`,
       );
     }
-    const body = response.body;
-    if (!body) {
+    if (data == null) {
       throw new InternalServerErrorException(
-        'file.resolve_storage_empty_response_body',
+        'file.resolve_storage_empty_response',
       );
     }
 
-    const chunks: Buffer[] = [];
-    const readable = Readable.fromWeb(body as import('stream/web').ReadableStream);
-    for await (const chunk of readable) {
-      chunks.push(Buffer.from(chunk));
+    const arrayBuffer = await data.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    if (buffer.length === 0) {
+      throw new InternalServerErrorException(
+        'file.resolve_storage_empty_file',
+      );
     }
-    const buffer = Buffer.concat(chunks);
+
+    const mimeType =
+      (data.type?.trim().length ?? 0) > 0
+        ? (data.type as string)
+        : this.getMimeTypeFromExtension(storagePath);
+    this.logger.debug(`mine type: ${mimeType} bytes`);
     this.logger.debug(`Resolved storage file to buffer: ${buffer.length} bytes`);
     return { buffer, mimeType };
+  }
+
+  private getMimeTypeFromExtension(storagePath: string): string {
+    const ext = this.getExtension(storagePath);
+    return ext
+      ? EXT_TO_MIMETYPE[ext.toLowerCase()] ?? 'application/octet-stream'
+      : 'application/octet-stream';
   }
 
   private getExtension(storagePath: string): string {
