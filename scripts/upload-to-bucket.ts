@@ -1,113 +1,97 @@
-/**
- * Standalone script: upload file to Supabase Storage bucket directly.
- * No project services – uses .env config and @supabase/supabase-js only.
- *
- * Usage: npx ts-node -r tsconfig-paths/register scripts/upload-to-bucket.ts [filePath]
- *
- * Default file: resource/building compliance/difficault-1-exemplar-compliance-schedule.pdf
- * Bucket name: temp
- *
- * Requires .env with SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
- */
-
 import { config } from 'dotenv';
-import { readFile } from 'fs/promises';
 import { resolve } from 'path';
-import { createClient } from '@supabase/supabase-js';
-import { lookup } from 'dns/promises';
+import { createReadStream, statSync, existsSync } from 'fs';
+import * as tus from 'tus-js-client';
 
-const DEFAULT_FILE =
-  'resource/building compliance/cs_sample.pdf';
-const BUCKET_NAME = 'cs_documents';
-
+// 1. 加载配置
 config({ path: resolve(process.cwd(), '.env.local') });
 config({ path: resolve(process.cwd(), '.env') });
 
-async function networkProbe(host: string) {
-  console.log(`[PROBE] Diagnosing connection to: ${host}`);
-  try {
-    const address = await lookup(host);
-    console.log(`[PROBE] DNS Success: ${address.address} (Family: IPv${address.family})`);
-  } catch (err: any) {
-    console.error(`[PROBE] DNS FAILED: ${err.message}`);
-  }
-}
-
-function buildUniquePath(prefix: string, originalName: string): string {
-  const safeName = originalName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 128);
-  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  const ext = safeName.includes('.') ? safeName.split('.').pop() ?? '' : '';
-  const base = ext ? safeName.slice(0, -(ext.length + 1)) : safeName;
-  return `${prefix}/${base}-${unique}${ext ? `.${ext}` : ''}`.replace(
-    /\/+/g,
-    '/',
-  );
-}
-
-function getMimeType(filePath: string): string {
-  const ext = filePath.replace(/^.*\./, '').toLowerCase();
-  const map: Record<string, string> = {
-    pdf: 'application/pdf',
-    png: 'image/png',
-    jpg: 'image/jpeg',
-    jpeg: 'image/jpeg',
-  };
-  return map[ext] ?? 'application/octet-stream';
-}
+const DEFAULT_FILE = 'resource/building compliance/cs_sample.pdf';
+const BUCKET_NAME = 'cs_documents';
 
 async function main(): Promise<void> {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  await networkProbe('ckaavxsflcvgcdckzrdv.supabase.co');
+
   if (!url || !key) {
-    console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env');
+    console.error('❌ Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
     process.exit(1);
   }
 
   const filePath = process.argv[2] ?? DEFAULT_FILE;
   const resolvedPath = resolve(process.cwd(), filePath);
-  const buffer = await readFile(resolvedPath);
+
+  if (!existsSync(resolvedPath)) {
+    console.error(`❌ File not found: ${resolvedPath}`);
+    process.exit(1);
+  }
+
+  const stats = statSync(resolvedPath);
   const originalName = filePath.replace(/^.*[\\/]/, '');
-  const contentType = getMimeType(filePath);
-  const storagePath = buildUniquePath("temp", originalName);
-  const blob = new Blob([buffer], { type: contentType });
-  //const supabase = createClient(url, key, { auth: { persistSession: false } });
-  const fileBuffer = await readFile(resolvedPath);
-  const uint8Array = new Uint8Array(fileBuffer);
+  
+  const endpoint = `${url.replace(/\/$/, '')}/storage/v1/upload/resumable`;
 
-  console.log('Uploading file to:', storagePath);
+  console.log('================ TUS SURVIVAL MODE ================');
+  console.log(`[FILE]: ${originalName}`);
+  console.log(`[SIZE]: ${(stats.size / 1024).toFixed(2)} KB`);
+  console.log(`[ENDPOINT]: ${endpoint}`);
+  console.log('====================================================');
 
-  const supabase = createClient(url, key, {
-    auth: { persistSession: false },
-    global: {
-      // [核心修复 2] 强制配置 fetch 参数，增加 keep-alive
-      fetch: (url, options) => fetch(url, { ...options, keepalive: true })
-    }
+  const fileStream = createReadStream(resolvedPath);
+
+  const upload = new tus.Upload(fileStream, {
+    endpoint,
+    retryDelays: [0, 1000, 3000, 5000, 10000, 20000], 
+    headers: {
+      'Authorization': `Bearer ${key}`,
+      'x-upsert': 'true',
+    },
+    uploadSize: stats.size,
+    metadata: {
+      bucketName: BUCKET_NAME,
+      objectName: `temp/${Date.now()}-${originalName}`,
+      contentType: 'application/pdf',
+    },
+    // 强制极端分片以规避 DPI 拦截
+    chunkSize: 64 * 1024, // 64KB
+    parallelUploads: 1, 
+    
+    onError: (error) => {
+      console.error('\n❌ [TUS FATAL ERROR]');
+      console.error('Message:', error.message);
+      
+      // 修复：使用类型断言访问 TUS 特有属性
+      const detailedError = error as any;
+      if (detailedError.originalRequest) {
+        console.log('HTTP Status:', detailedError.originalRequest.status);
+        // 部分环境下 _offset 属性在内部请求对象中
+        const offset = detailedError.originalRequest._offset ?? 'unknown';
+        console.error('Failed at Offset:', offset);
+      }
+      
+      process.exit(1);
+    },
+    onProgress: (bytesSent, bytesTotal) => {
+      const percentage = ((bytesSent / bytesTotal) * 100).toFixed(2);
+      process.stdout.write(`\r[PROGRESS]: ${percentage}% (${bytesSent}/${bytesTotal} bytes)`);
+    },
+    onSuccess: () => {
+      console.log('\n\n✅ [SUCCESS] File uploaded successfully via TUS.');
+      process.exit(0);
+    },
   });
 
-  console.log(`Starting production-grade upload: ${storagePath}`);
-
-  const { data, error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .upload(storagePath, uint8Array, { // 传入 Uint8Array
-      contentType: getMimeType(filePath),
-      upsert: false,
-      // [核心修复 3] 某些环境下手动指定 duplex 模式
-      // @ts-ignore
-      duplex: 'half' 
-    });
-
-    if (error) {
-      console.error('================ FINAL AUDIT FAILED ================');
-      console.error('Code:', (error as any).status);
-      console.error('Message:', error.message);
-      process.exit(1);
+  upload.findPreviousUploads().then((previousUploads) => {
+    if (previousUploads.length) {
+      upload.resumeFromPreviousUpload(previousUploads[0]);
     }
-
-  console.log('Upload success. storagePath:', storagePath);
+    console.log('[TUS] Starting/Resuming upload...');
+    upload.start();
+  });
 }
 
 main().catch((err) => {
-  console.error(err);
+  console.error('\n[SYSTEM CRASH]', err);
   process.exit(1);
 });
