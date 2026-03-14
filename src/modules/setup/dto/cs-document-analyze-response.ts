@@ -76,3 +76,26 @@ export type IUploadAndAnalyzeResult = {
   storagePath: string;
   analysis: BuildingCompliance;
 };
+
+// =============================================================================
+// Enriched types (ID fuzzy match result; schema unchanged for AI output)
+// =============================================================================
+
+export type SubCategoryMatchInfo = {
+  id: string;
+  confidence_score: number;
+  alternatives?: Array<{ id: string; ssCode: string; name: string }>;
+};
+
+export type EnrichedInspectionSchedule = BuildingCompliance['specified_systems'][number]['inspection_schedules'][number] & {
+  frequency_dict_id?: string;
+};
+
+export type EnrichedSpecifiedSystem = BuildingCompliance['specified_systems'][number] & {
+  sub_category_match?: SubCategoryMatchInfo;
+  inspection_schedules: EnrichedInspectionSchedule[];
+};
+
+export type EnrichedBuildingCompliance = Omit<BuildingCompliance, 'specified_systems'> & {
+  specified_systems: EnrichedSpecifiedSystem[];
+};

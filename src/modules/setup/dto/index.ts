@@ -8,5 +8,9 @@ export {
   DocumentIndexSchema,
   type BuildingCompliance,
   type DocumentIndex,
+  type EnrichedBuildingCompliance,
+  type EnrichedInspectionSchedule,
+  type EnrichedSpecifiedSystem,
   type IUploadAndAnalyzeResult,
+  type SubCategoryMatchInfo,
 } from './cs-document-analyze-response';

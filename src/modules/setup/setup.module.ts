@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SetupController } from './controllers/setup.controller';
 import { BuildingComplianceSchemaService } from './services/building-compliance-schema.service';
 import { CsDocumentAnalyzeService } from './services/cs-document-analyze.service';
+import { IdFuzzyMatchService } from './services/id-fuzzy-match.service';
 import { TaskProcessor } from './queue/task-processor';
 import { QueueModule } from '../../common/queue/queue.module';
 
@@ -15,6 +16,7 @@ import { QueueModule } from '../../common/queue/queue.module';
   providers: [
     BuildingComplianceSchemaService,
     CsDocumentAnalyzeService,
+    IdFuzzyMatchService,
     TaskProcessor,
   ],
   exports: [CsDocumentAnalyzeService],

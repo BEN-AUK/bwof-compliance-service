@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { type FileUploadInput } from '../../../common/services/file.service';
 import {
   CsDocumentAnalyzeService,
-  type BuildingCompliance,
+  type EnrichedBuildingCompliance,
 } from './cs-document-analyze.service';
 
 /**
@@ -23,8 +23,8 @@ export class SetupService {
     return this.csDocumentAnalyze.upload(file, options);
   }
 
-  /** 对文件做 AI 解析（Gemini，Prompt 固定为 csBuildingAnalyzer）。不上传，仅分析。 */
-  analyzeFile(file: FileUploadInput): Promise<BuildingCompliance> {
+  /** 对文件做 AI 解析（Gemini，Prompt 固定为 csBuildingAnalyzer）。不上传，仅分析。返回含 ID 模糊匹配的 enriched 结果。 */
+  analyzeFile(file: FileUploadInput): Promise<EnrichedBuildingCompliance> {
     return this.csDocumentAnalyze.analyze(file);
   }
 }

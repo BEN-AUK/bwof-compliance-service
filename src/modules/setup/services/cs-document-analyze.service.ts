@@ -17,13 +17,20 @@ import {
   DocumentIndexSchema,
   type BuildingCompliance,
   type DocumentIndex,
+  type EnrichedBuildingCompliance,
 } from '../dto/cs-document-analyze-response';
 import { BuildingComplianceSchemaService } from './building-compliance-schema.service';
+import { IdFuzzyMatchService } from './id-fuzzy-match.service';
 import { PDFDocument } from 'pdf-lib';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
 
-export type { BuildingCompliance, DocumentIndex, IUploadAndAnalyzeResult } from '../dto/cs-document-analyze-response';
+export type {
+  BuildingCompliance,
+  DocumentIndex,
+  EnrichedBuildingCompliance,
+  IUploadAndAnalyzeResult,
+} from '../dto/cs-document-analyze-response';
 export type { FileUploadInput } from '../../../common/services/file.service';
 
 // =============================================================================
@@ -53,6 +60,7 @@ export class CsDocumentAnalyzeService {
     private readonly file: FileService,
     private readonly config: ConfigService,
     private readonly schemaService: BuildingComplianceSchemaService,
+    private readonly idFuzzyMatch: IdFuzzyMatchService,
   ) {
     this.aiRequestTimeoutMs =
       Number(this.config.get<string>('AI_REQUEST_TIMEOUT_MS')) || 30_000;
@@ -91,8 +99,9 @@ export class CsDocumentAnalyzeService {
    * Run AI analysis on file (Gemini Vision, prompt csBuildingAnalyzer from YAML).
    * PDF only: Indexer -> Slicer -> Extractor pipeline.
    * Does not upload; use together with upload() if you need storage.
+   * Returns enriched result with sub_category_match (id + confidence), frequency_dict_id.
    */
-  async analyze(file: FileUploadInput): Promise<BuildingCompliance> {
+  async analyze(file: FileUploadInput): Promise<EnrichedBuildingCompliance> {
     let { buffer, mimeType } = this.file.normalizeFileInput(file);
     const fileSizeBytes = buffer.length;
     const fileSizeKb = (fileSizeBytes / 1024).toFixed(2);
@@ -138,7 +147,7 @@ export class CsDocumentAnalyzeService {
       useTextPath ? { type: 'text', content: extractedText } : { type: 'buffer', content: slicedBuffer },
     );
 
-    return result;
+    return this.idFuzzyMatch.enrichWithMatchedIds(result);
   }
 
   @LogExecutionTime({ label: 'Indexer' })

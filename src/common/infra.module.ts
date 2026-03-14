@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import {
   FrequencyDictRepository,
   ProfileRepository,
+  SubCategoryRepository,
   TaskRepository,
 } from './database/repositories';
 import { QueueModule } from './queue/queue.module';
@@ -21,6 +22,7 @@ import { TaskCreatedWebhookController } from './webhooks/task-created.webhook.co
   providers: [
     FrequencyDictRepository,
     ProfileRepository,
+    SubCategoryRepository,
     TaskRepository,
     InfraService,
     BucketService,
@@ -32,6 +34,7 @@ import { TaskCreatedWebhookController } from './webhooks/task-created.webhook.co
   exports: [
     FrequencyDictRepository,
     ProfileRepository,
+    SubCategoryRepository,
     TaskRepository,
     InfraService,
     BucketService,
