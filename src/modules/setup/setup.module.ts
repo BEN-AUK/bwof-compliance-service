@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
 import { SetupController } from './controllers/setup.controller';
+import { BuildingComplianceSchemaService } from './services/building-compliance-schema.service';
 import { CsDocumentAnalyzeService } from './services/cs-document-analyze.service';
-import { QueueModule } from '../../common/queue/queue.module';
 import { TaskProcessor } from './queue/task-processor';
+import { QueueModule } from '../../common/queue/queue.module';
 
 /**
  * SetupModule - 统一处理 buildings, documents, category, inspections 的联合落库事务。
@@ -11,7 +12,11 @@ import { TaskProcessor } from './queue/task-processor';
 @Module({
   imports: [QueueModule],
   controllers: [SetupController],
-  providers: [CsDocumentAnalyzeService, TaskProcessor],
+  providers: [
+    BuildingComplianceSchemaService,
+    CsDocumentAnalyzeService,
+    TaskProcessor,
+  ],
   exports: [CsDocumentAnalyzeService],
 })
 export class SetupModule {}

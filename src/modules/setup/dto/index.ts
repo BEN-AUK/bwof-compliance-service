@@ -4,7 +4,7 @@
  */
 
 export {
-  BuildingComplianceSchema,
+  buildBuildingComplianceSchema,
   DocumentIndexSchema,
   type BuildingCompliance,
   type DocumentIndex,

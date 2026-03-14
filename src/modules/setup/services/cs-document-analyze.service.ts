@@ -14,11 +14,11 @@ import {
   type DocumentInput,
 } from '../../../common/utils';
 import {
-  BuildingComplianceSchema,
   DocumentIndexSchema,
   type BuildingCompliance,
   type DocumentIndex,
 } from '../dto/cs-document-analyze-response';
+import { BuildingComplianceSchemaService } from './building-compliance-schema.service';
 import { PDFDocument } from 'pdf-lib';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import { z } from 'zod';
@@ -52,6 +52,7 @@ export class CsDocumentAnalyzeService {
     private readonly bucket: BucketService,
     private readonly file: FileService,
     private readonly config: ConfigService,
+    private readonly schemaService: BuildingComplianceSchemaService,
   ) {
     this.aiRequestTimeoutMs =
       Number(this.config.get<string>('AI_REQUEST_TIMEOUT_MS')) || 30_000;
@@ -224,6 +225,8 @@ export class CsDocumentAnalyzeService {
       { pdfMimeType: this.pdfMimeType },
     );
 
+    const schema = this.schemaService.getSchema();
+
     let raw: string;
     try {
       raw = await this.ai.generateContent({
@@ -233,7 +236,7 @@ export class CsDocumentAnalyzeService {
         model,
         timeoutMs: this.aiRequestTimeoutMs,
         responseMimeType: 'application/json',
-        responseJsonSchema: zodToJsonSchema(BuildingComplianceSchema, {
+        responseJsonSchema: zodToJsonSchema(schema, {
           target: 'openApi3',
           $refStrategy: 'none',
         }) as object,
@@ -248,7 +251,7 @@ export class CsDocumentAnalyzeService {
 
     return parseJsonWithSchema<BuildingCompliance>(
       raw,
-      BuildingComplianceSchema as z.ZodType<BuildingCompliance>,
+      schema as z.ZodType<BuildingCompliance>,
       'file_upload_ai.invalid_ai_json',
     );
   }

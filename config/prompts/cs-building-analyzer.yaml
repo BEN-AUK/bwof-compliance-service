@@ -31,12 +31,14 @@ csBuildingAnalyzer:
         * Source: "EF-02 Toilet. This [brand name] inline extract fan extracts foul air at a rate of 229l/s @ 100Pa." -> Extent: "1 extract fan (229l/s), EF-02 Toilet"
     Roles/Frequencies: 
       - Standardize all variations into exact Enum values.
-      - Frequencies: [Daily, Weekly, Monthly, 3 Monthly, 6 Monthly, Annually]
+      - Frequencies: [daily, weekly, monthly, quarterly, 6-monthly, annual]
       - Roles: [Owner, IQP, Agent]
       - MAPPING EXAMPLES:
-        * "Every 7 days", "Each week" -> Weekly
-        * "Quarterly", "Every 3 months" -> 3 Monthly
-        * "Half-yearly", "Every 6 months" -> 6 Monthly
+        * "Daily", "Each day" -> daily
+        * "Every 7 days", "Each week" -> weekly
+        * "Quarterly", "Every 3 months" -> quarterly
+        * "Half-yearly", "Every 6 months" -> 6-monthly
+        * "Annually", "Yearly" -> annual
         * "Owner's representative", "Facilities Manager" -> Agent
 
     # Strict Output Constraints

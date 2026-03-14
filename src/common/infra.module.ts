@@ -1,6 +1,10 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ProfileRepository, TaskRepository } from './database/repositories';
+import {
+  FrequencyDictRepository,
+  ProfileRepository,
+  TaskRepository,
+} from './database/repositories';
 import { QueueModule } from './queue/queue.module';
 import { AiService } from './services/ai.service';
 import { AuthContext } from './services/auth-context.service';
@@ -15,6 +19,7 @@ import { TaskCreatedWebhookController } from './webhooks/task-created.webhook.co
   imports: [ConfigModule, QueueModule],
   controllers: [TaskCreatedWebhookController],
   providers: [
+    FrequencyDictRepository,
     ProfileRepository,
     TaskRepository,
     InfraService,
@@ -25,6 +30,7 @@ import { TaskCreatedWebhookController } from './webhooks/task-created.webhook.co
     TaskService,
   ],
   exports: [
+    FrequencyDictRepository,
     ProfileRepository,
     TaskRepository,
     InfraService,

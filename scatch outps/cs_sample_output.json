@@ -1,0 +1,290 @@
+{
+    "building_metadata": {
+        "address": "112 Bridge Street, Bulls",
+        "cs_number": "CS0320",
+        "issue_date": "30 September 2020",
+        "council_name": "Rangitikei District Council",
+        "building_name": "Te Matapihi – Bulls Community Centre"
+    },
+    "specified_systems": [
+        {
+            "ss_code": "SS 1",
+            "system_name": "Automatic systems for fire suppression",
+            "compliance_baseline": {
+                "extent": "Type 6 automatic fire sprinkler system (including diesel pump, 90kl water tank, concealed heads, and fire alarm interface), interior and exterior (mezzanine/eaves) throughout building",
+                "performance_standards": [
+                    "NZS 4541:2013"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "Weekly",
+                    "inspector_role": "IQP"
+                },
+                {
+                    "frequency": "Monthly",
+                    "inspector_role": "IQP"
+                },
+                {
+                    "frequency": "3 Monthly",
+                    "inspector_role": "IQP"
+                },
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 2",
+            "system_name": "Automatic or manual emergency warning systems for fire or other dangers",
+            "compliance_baseline": {
+                "extent": "Type 6 automatic fire sprinkler and Type 2 manual fire alarm system (10 manual call points, fire indicator panel)",
+                "performance_standards": [
+                    "NZS 4512:2010"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "Monthly",
+                    "inspector_role": "IQP"
+                },
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 3/1",
+            "system_name": "Automatic doors",
+            "compliance_baseline": {
+                "extent": "1 bi-parting sliding automatic door, main entrance Criterion St",
+                "performance_standards": [
+                    "AS 5007:2007"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "Daily",
+                    "inspector_role": "Owner"
+                },
+                {
+                    "frequency": "Monthly",
+                    "inspector_role": "Owner"
+                },
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 4",
+            "system_name": "Emergency lighting systems",
+            "compliance_baseline": {
+                "extent": "Interior single-point emergency lights, 3 exterior twin-floodlights, 2 illuminated exit signs to roof terrace",
+                "performance_standards": [
+                    "AS 2293.1-2005",
+                    "AS 2293.3-2005"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "6 Monthly",
+                    "inspector_role": "IQP"
+                },
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 7",
+            "system_name": "Automatic back-flow preventers connected to a potable water supply",
+            "compliance_baseline": {
+                "extent": "3 atmospheric vacuum breakers (1 ground, 2 level 2)",
+                "performance_standards": [
+                    "AS/NZS 2845.1:2010"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 8/1",
+            "system_name": "Passenger-carrying lifts",
+            "compliance_baseline": {
+                "extent": "1 machine room-less accessible lift (13 person/1000kg capacity)",
+                "performance_standards": [
+                    "NZS 4332:1997"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 9",
+            "system_name": "Mechanical ventilation or air conditioning systems",
+            "compliance_baseline": {
+                "extent": "Mechanical fresh air and extract systems (Library, Toilets, Kitchen extract hood)",
+                "performance_standards": [
+                    "NZS 4303:1990",
+                    "AS/NZS 1668.2:2012"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "Monthly",
+                    "inspector_role": "IQP"
+                },
+                {
+                    "frequency": "3 Monthly",
+                    "inspector_role": "IQP"
+                },
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 12/2",
+            "system_name": "FM radio frequency systems & infra-red beam transmission systems",
+            "compliance_baseline": {
+                "extent": "Hearing assistance system (master control unit, 4 receivers) for auditorium and library",
+                "performance_standards": [
+                    "NZBC G5"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "6 Monthly",
+                    "inspector_role": "IQP"
+                },
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 13/1",
+            "system_name": "Mechanical smoke control",
+            "compliance_baseline": {
+                "extent": "Extract smoke system at stage high-level",
+                "performance_standards": [
+                    "AS/NZS 1668.1:2015"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "6 Monthly",
+                    "inspector_role": "IQP"
+                },
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 14/2",
+            "system_name": "Signs relating to a system or feature specified in any of clauses 1 to 13",
+            "compliance_baseline": {
+                "extent": "Location, instructional, safety, and restriction signs throughout building",
+                "performance_standards": [
+                    "F8/AS1"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 15/2",
+            "system_name": "Final exits",
+            "compliance_baseline": {
+                "extent": "8 final exits (5 double doors, 1 automatic bi-parting sliding door, 2 single doors)",
+                "performance_standards": [
+                    "NZBC C4"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "Daily",
+                    "inspector_role": "Owner"
+                },
+                {
+                    "frequency": "Monthly",
+                    "inspector_role": "Owner"
+                },
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 15/3",
+            "system_name": "Fire separations",
+            "compliance_baseline": {
+                "extent": "3 fire cells (sprinkler pump room, rear stairwell, main building) with 5 fire doors",
+                "performance_standards": [
+                    "NZBC C3",
+                    "NZBC C4"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "Daily",
+                    "inspector_role": "Owner"
+                },
+                {
+                    "frequency": "Monthly",
+                    "inspector_role": "Owner"
+                },
+                {
+                    "frequency": "6 Monthly",
+                    "inspector_role": "IQP"
+                },
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        },
+        {
+            "ss_code": "SS 15/4",
+            "system_name": "Signs for communicating information intended to facilitate evacuation",
+            "compliance_baseline": {
+                "extent": "23 white/green evacuation signs with integrated LED illumination",
+                "performance_standards": [
+                    "F8/AS1"
+                ]
+            },
+            "inspection_schedules": [
+                {
+                    "frequency": "Monthly",
+                    "inspector_role": "Owner"
+                },
+                {
+                    "frequency": "Annually",
+                    "inspector_role": "IQP"
+                }
+            ]
+        }
+    ]
+}
